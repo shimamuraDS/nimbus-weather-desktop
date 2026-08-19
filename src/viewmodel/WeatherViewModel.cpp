@@ -22,6 +22,8 @@ WeatherViewModel::WeatherViewModel(Service::WeatherService* weatherService,
 
     connect(m_weatherService, &Service::WeatherService::weatherDataUpdated,
             this, &WeatherViewModel::onWeatherDataUpdated);
+    connect(m_weatherService, &Service::WeatherService::weatherDataCleared,
+            this, [this]() { loadFromCache(); });
     connect(m_weatherService, &Service::WeatherService::networkError,
             this, [this](const QString&) {
         if (!m_isOffline) {

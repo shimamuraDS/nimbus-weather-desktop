@@ -1,15 +1,15 @@
-# Nimbus — 系统架构设计文档
+# Nimbus Weather — 系统架构设计文档
 
 ## 一、项目概述
 
 | 属性 | 说明 |
 |------|------|
-| **项目名称** | Nimbus |
-| **技术栈** | C++17, Qt 6.8 LTS (QML + C++), CMake 3.16+ |
+| **项目名称** | Nimbus Weather |
+| **技术栈** | C++17, Qt 6.8 LTS (QML + C++), CMake 3.30+ |
 | **运行平台** | Windows 桌面端 (系统托盘驻留应用) |
 | **构建环境** | CMake + Ninja (MinGW 13.1.0) |
 | **第三方服务** | 腾讯位置服务 WebService API |
-| **打包格式** | WiX MSI 安装包 (Standard / AI 双版本) |
+| **打包格式** | CPack WiX 4 MSI + portable ZIP (Standard / AI 双版本) |
 
 ### 核心功能
 
@@ -25,7 +25,7 @@
 ## 二、项目目录结构
 
 ```text
-Nimbus/
+nimbus-weather-desktop/
 ├── CMakeLists.txt                  # 核心构建脚本 (含 WITH_LLM 双版本开关)
 ├── .gitignore                      # Git 忽略规则 (排除敏感配置文件)
 ├── README.md
@@ -85,7 +85,7 @@ Nimbus/
 ├── resources/
 │   ├── resources.qrc               # Qt 资源集合
 │   ├── app.rc                      # Windows 资源脚本 (图标)
-│   ├── Nimbus.ico                  # 应用图标
+│   ├── NimbusWeather.ico           # 应用图标
 │   └── icons/                      # 天气图标 PNG
 ├── tests/                          # 单元测试 (QtTest + CTest)
 │   ├── CMakeLists.txt
@@ -93,11 +93,11 @@ Nimbus/
 │   ├── tst_AlertCondition.cpp
 │   └── tst_HttpService.cpp
 ├── scripts/
-│   ├── generate_wxs.py             # WiX .wxs 生成器
-│   └── Installer/                  # 构建产物输出目录
-└── deploy/                         # windeployqt 临时部署目录
-    ├── standard/
-    └── ai/
+│   └── build_release.py            # 可复现发布编排（编译/测试/MSI/ZIP/SHA-256）
+└── dist/                           # CPack 发布产物（Git 忽略）
+    ├── NimbusWeather-*-win64-*.msi
+    ├── NimbusWeather-*-win64-*.zip
+    └── SHA256SUMS.txt
 ```
 
 ---
@@ -263,8 +263,8 @@ option(WITH_LLM "Build with LLM-powered weather alerts" OFF)
 
 | 构建命令 | 产物 | 通知方式 |
 |----------|------|---------|
-| `cmake -DWITH_LLM=OFF ..` | Nimbus.exe (标准版) | 固定中文模板 |
-| `cmake -DWITH_LLM=ON ..` | Nimbus.exe (AI 版) | LLM 自然语言 + 模板降级 |
+| `cmake -DWITH_LLM=OFF ..` | NimbusWeather.exe (标准版) | 固定中文模板 |
+| `cmake -DWITH_LLM=ON ..` | NimbusWeather.exe (AI 版) | LLM 自然语言 + 模板降级 |
 
 条件编译通过 `#ifdef WITH_LLM` 宏控制：
 - `src/llm/` 模块的编译和链接
@@ -308,34 +308,27 @@ DPAPI (crypt32.dll) 通过 `LoadLibrary`/`GetProcAddress` 动态加载，无需�
 
 ## 九、打包部署
 
-### windeployqt
+### CMake / Qt / CPack 发布链路
 
-```bat
-windeployqt --qmldir ../qml --release ./Nimbus.exe
-```
+发布目录由 CMake Install 规则统一定义；`qt_generate_deploy_qml_app_script()` 调用与当前 Qt kit 匹配的部署工具，自动解析 QML imports、Qt 插件和 MinGW runtime。CPack 再从同一安装清单生成 portable ZIP 与 WiX 4 MSI，避免手工同步 deploy 目录或从 PATH 混入旧版 DLL。
 
-### WiX MSI 安装包
-
-使用 WiX Toolset v7 生成 MSI 安装包。通过 `scripts/generate_wxs.py` 扫描 deploy 目录自动生成 `.wxs` 源文件，再由 `wix build` 编译。
-
-```bash
-# 生成 WiX 源文件
-python scripts/generate_wxs.py deploy/standard scripts/Nimbus_Standard.wxs \
-    --name "Nimbus Standard" --upgrade-code <GUID>
-
-# 编译 MSI（需先 wix extension add WixToolset.UI.wixext）
-wix build -ext WixToolset.UI.wixext -o scripts/Installer/Nimbus_Standard.msi scripts/Nimbus_Standard.wxs
+```powershell
+python scripts/build_release.py
 ```
 
 MSI 特性：
 - 安装向导支持自定义安装路径（WixUI_InstallDir，Browse 选择目录）
-- 默认安装到 `%ProgramFiles%\Nimbus`
-- 开始菜单 & 桌面快捷方式
-- 开机自启注册表 (`HKCU\...\Run`, `-hidden` 参数)
-- MajorUpgrade 自动升级旧版本
+- Standard / AI 使用独立、稳定的 UpgradeCode
+- 默认按 per-machine 方式安装到 `%ProgramFiles%`
+- 支持 `msiexec /quiet` 静默部署与 Windows Installer 回滚
+- MajorUpgrade 自动升级旧版本并阻止降级
+- 开始菜单快捷方式由 CPack 统一生成
+- 开机自启由应用设置页管理，不由安装器强制开启
+
+发布脚本固定使用 WiX 4.0.4，并将 WiX 二进制与扩展缓存隔离在 `.tools/`；最终产物写入 `dist/` 并生成 SHA-256 校验文件。
 
 ### 卸载清理
 
-- `%LOCALAPPDATA%\Nimbus\weather_cache.json`
-- `QSettings` 注册表残留 (`HKCU\Software\Nimbus`)
+- `%LOCALAPPDATA%\shimamuraDS\NimbusWeather\weather_cache.json`
+- `QSettings` 注册表残留 (`HKCU\Software\shimamuraDS\NimbusWeather`)
 - `HKCU\...\Run` 开机自启项

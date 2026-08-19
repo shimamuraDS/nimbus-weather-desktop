@@ -2,13 +2,13 @@
 
 ## 1. 安装与启动
 
-1.  从 [GitHub Releases](https://github.com/shimamuraDS/Nimbus/releases) 下载安装包：
-    - **标准版**：`Nimbus_Standard.msi`（固定模板通知）
-    - **AI 版**：`Nimbus_AI.msi`（LLM 智能通知 + 模板降级）
+1.  从 [GitHub Releases](https://github.com/shimamuraDS/nimbus-weather-desktop/releases) 下载安装包：
+    - **标准版**：`NimbusWeather-1.0.2-win64-Standard.msi`（固定模板通知）
+    - **AI 版**：`NimbusWeather-1.0.2-win64-AI.msi`（LLM 智能通知 + 模板降级）
 2.  双击运行 `.msi` 安装包，按向导完成安装。安装过程中可选择自定义安装路径。
 3.  安装完毕后，程序将默认开启**开机自启动**并隐藏运行。
 4.  您将在 Windows 屏幕右下角（系统托盘区域）看到一枚天气助手的图标。
-5.  点击该图标，即可在屏幕右下角唤出 Nimbus 控制面板。
+5.  点击该图标，即可在屏幕右下角唤出 Nimbus Weather 控制面板。
 
 ## 2. 各页面操作方法
 
@@ -37,7 +37,7 @@
 
 - **天气 API**：填入腾讯位置服务开发者密钥。右侧 `?` 图标可跳转到密钥申请页面。填入密钥后天气数据自动刷新。
 
-- **AI Nimbus**（仅 AI 版本）：AI 生成天气提醒配置区。
+- **Nimbus Weather AI**（仅 AI 版本）：AI 生成天气提醒配置区。
   - 模型选择：DeepSeek（预设）/ 自定义
   - DeepSeek 模式：下拉选择 API 地址和模型名称（含 `deepseek-v4-flash`、`deepseek-v4-pro`、`deepseek-chat`、`deepseek-reasoner`），API Key 填入 DeepSeek 密钥
   - 自定义模式：手动输入任意 OpenAI 兼容 API 地址和模型名

@@ -13,12 +13,13 @@ class HttpClient : public QObject {
     Q_OBJECT
 public:
     explicit HttpClient(QObject* parent = nullptr);
-    virtual ~HttpClient();
+    ~HttpClient() override = default;
 
 protected:
     void sendGetRequest(const QUrl& url,
                         std::function<void(const QJsonObject&)> onSuccess,
-                        std::function<void(const QString&)> onError);
+                        std::function<void(const QString&)> onError,
+                        int timeoutMs = 10000);
 
 private:
     QNetworkAccessManager* m_manager;

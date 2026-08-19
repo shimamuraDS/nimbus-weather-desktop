@@ -5,6 +5,7 @@
 #include <QSystemTrayIcon>
 #include <QMenu>
 #include <QAction>
+#include <memory>
 
 namespace Service {
 
@@ -26,9 +27,10 @@ signals:
 private:
     NotificationManager();
     ~NotificationManager() = default;
+    void shutdown();
 
-    QSystemTrayIcon* m_trayIcon;
-    QMenu* m_trayMenu;
+    QSystemTrayIcon* m_trayIcon = nullptr;
+    std::unique_ptr<QMenu> m_trayMenu;
 };
 
 } // namespace Service

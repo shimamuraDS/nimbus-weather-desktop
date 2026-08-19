@@ -127,14 +127,15 @@ void SettingsViewModel::checkForUpdates()
         client->deleteLater();
         m_releaseUrl = htmlUrl;
         m_latestVersion = tagName;
-        m_updateAvailable = isNewerVersion(tagName, NIMBUS_VERSION);
+        m_updateAvailable = isNewerVersion(tagName, NIMBUS_WEATHER_VERSION);
         emit updateInfoChanged();
     });
     connect(client, &Network::GitHubReleaseClient::errorOccurred,
             this, [this, client](const QString&) {
         client->deleteLater();
     });
-    client->checkLatestRelease(QStringLiteral("shimamuraDS"), QStringLiteral("Nimbus"));
+    client->checkLatestRelease(QStringLiteral("shimamuraDS"),
+                               QStringLiteral("nimbus-weather-desktop"));
 }
 
 void SettingsViewModel::openReleasePage()
@@ -142,7 +143,8 @@ void SettingsViewModel::openReleasePage()
     if (!m_releaseUrl.isEmpty())
         QDesktopServices::openUrl(QUrl(m_releaseUrl));
     else
-        QDesktopServices::openUrl(QUrl("https://github.com/shimamuraDS/Nimbus/releases"));
+        QDesktopServices::openUrl(
+            QUrl("https://github.com/shimamuraDS/nimbus-weather-desktop/releases"));
 }
 
 #ifdef WITH_LLM

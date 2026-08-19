@@ -1,8 +1,8 @@
 <p align="center">
-  <img src="resources/icons/Nimbus.ico" width="96" alt="Nimbus Logo" />
+  <img src="resources/icons/NimbusWeather.ico" width="96" alt="Nimbus Weather Logo" />
 </p>
 
-<h1 align="center" style="font-size: 2.5em; font-weight: bold; margin-bottom: 0.2em; color: #00f0ff;">Nimbus</h1>
+<h1 align="center" style="font-size: 2.5em; font-weight: bold; margin-bottom: 0.2em; color: #00f0ff;">Nimbus Weather</h1>
 
 <p align="center">
   <strong>Windows 桌面天气提醒应用</strong>
@@ -17,7 +17,7 @@
 <p align="center">
   <img src="https://img.shields.io/badge/C%2B%2B-17-00599C?style=for-the-badge&logo=c%2B%2B&logoColor=white" alt="C++17" />
   <img src="https://img.shields.io/badge/Qt-6.8%20LTS-41CD52?style=for-the-badge&logo=qt&logoColor=white" alt="Qt 6.8 LTS" />
-  <img src="https://img.shields.io/badge/CMake-3.16%2B-064F8C?style=for-the-badge&logo=cmake&logoColor=white" alt="CMake 3.16+" />
+  <img src="https://img.shields.io/badge/CMake-3.30%2B-064F8C?style=for-the-badge&logo=cmake&logoColor=white" alt="CMake 3.30+" />
   <img src="https://img.shields.io/badge/Security-Windows%20DPAPI-ff7b90?style=for-the-badge&logo=windows&logoColor=white" alt="Windows DPAPI" />
   <img src="https://img.shields.io/badge/AI-DeepSeek%20%2F%20LLM-00f0ff?style=for-the-badge&logo=openai&logoColor=white" alt="DeepSeek LLM" />
   <img src="https://img.shields.io/badge/UI-Cyberpunk%20QML-a78bfa?style=for-the-badge&logo=qt&logoColor=white" alt="Cyberpunk QML" />
@@ -26,7 +26,7 @@
 </p>
 
 <p align="center" style="font-size: 1.1em; color: #cbd5e1; max-width: 750px; margin: 0 auto; line-height: 1.6;">
-  Nimbus 是一款 Windows 桌面天气应用，采用深色赛博朋克玻璃态 (Glassmorphism) 风格，支持 LLM 智能通知。应用以系统托盘驻留形式运行，提供逐小时时间线、多时点弹性警报与双重预警功能。
+  Nimbus Weather 是一款 Windows 桌面天气应用，采用深色赛博朋克玻璃态 (Glassmorphism) 风格，支持 LLM 智能通知。应用以系统托盘驻留形式运行，提供逐小时时间线、多时点弹性警报与双重预警功能。
 </p>
 
 ---
@@ -100,14 +100,14 @@
 ### 安全集成
 - **托盘常驻与自启动**：系统托盘右键菜单，开机自启写入 Windows 注册表 `Run`。
 - **Windows DPAPI 加密**：API 密钥及 LLM Token 使用 Windows DPAPI 加密存储，密钥与当前用户绑定，配置文件流出后无法在其他设备解密。
-- **WiX MSI 安装**：支持自定义安装路径、开机项注册与卸载清理。
+- **可复现 Windows 发布**：CMake Install + Qt Deployment API 自动收集匹配的 Qt/QML/MinGW 依赖，CPack 同时生成可选安装路径的 WiX 4 MSI 与便携 ZIP。
 - **自动更新检测**：启动时静默检查 GitHub Releases，有新版本时工具栏 GitHub 图标显示红点提示。
 
 ---
 
 ## 版本对比与下载
 
-Nimbus 采用单一代码库、双编译条件分支方案，产出两个独立安装包。
+Nimbus Weather 采用单一代码库、双编译条件分支方案，产出两个独立安装包。
 
 | 维度 | Standard 标准版 | AI 智能版 |
 |:---|:---:|:---:|
@@ -115,13 +115,13 @@ Nimbus 采用单一代码库、双编译条件分支方案，产出两个独立�
 | **通知逻辑** | 固定中文模板 | DeepSeek 自然语言 + API 离线自动模板降级 |
 | **外部 API 依赖** | 仅腾讯位置服务 WebService API | 腾讯位置服务 API + DeepSeek (OpenAI 兼容) API |
 | **安全存储** | DPAPI 加密存储腾讯开发密钥 | DPAPI 双密钥加密（腾讯键 + LLM 键） |
-| **打包产物** | `Nimbus_Standard.msi` | `Nimbus_AI.msi` |
-| **免安装包** | `Nimbus-v1.0.0-Standard.zip` | `Nimbus-v1.0.0-AI.zip` |
+| **打包产物** | `NimbusWeather-1.0.2-win64-Standard.msi` | `NimbusWeather-1.0.2-win64-AI.msi` |
+| **免安装包** | `NimbusWeather-1.0.2-win64-Standard.zip` | `NimbusWeather-1.0.2-win64-AI.zip` |
 
 > [!NOTE]
 > AI 版本在未启用 LLM 开关时，运行时开销及底层依赖与标准版一致。
 
-[前往 GitHub Releases 下载最新版本](https://github.com/shimamuraDS/Nimbus/releases)
+[前往 GitHub Releases 下载最新版本](https://github.com/shimamuraDS/nimbus-weather-desktop/releases)
 
 ---
 
@@ -152,11 +152,11 @@ Nimbus 采用单一代码库、双编译条件分支方案，产出两个独立�
 |:---|:---|:---|
 | **开发语言** | C++17 · QML (Qt Quick) | 原生执行效率 + GPU 加速声明式 UI |
 | **核心框架** | Qt 6.8 LTS | Core / Gui / Qml / Quick / Network / Widgets |
-| **构建系统** | CMake 3.16+ · Ninja | 现代化 C++ 构建，Ninja 增量编译 |
+| **构建系统** | CMake 3.30+ · Ninja | 现代化 C++ 构建，Ninja 增量编译 |
 | **设计模式** | MVVM + 三层服务化架构 | UI 数据双向绑定，View 零业务逻辑 |
 | **外部服务** | 腾讯位置 API + OpenAI SDK 兼容网络层 | IP 定位、天气预警、实时/逐小时/多日天气 |
 | **加密安全** | Windows DPAPI (动态加载 crypt32.dll) | 免静态依赖，跨 Windows 发行版兼容 |
-| **分发安装** | WiX Toolset v7 | Windows 安装包标准，支持安装/升级/卸载 |
+| **分发安装** | Qt Deployment API · CPack · WiX 4.0.4 | 同源生成 MSI/ZIP，支持安装目录选择、静默部署与 Major Upgrade |
 | **自动化测试** | QtTest + CTest | 覆盖时效合并、多路警报判定与 HTTP 异步重试 |
 
 ---
@@ -247,15 +247,16 @@ graph TD
 ### 1. 环境要求
 
 * **Qt SDK**：Qt 6.8+ (MinGW 64-bit 构建套件)
-* **CMake**：v3.16 及以上
+* **CMake**：v3.30 及以上
 * **Ninja**：推荐作为 CMake Generator
-* **WiX Toolset**：v7+（仅打包需要）
+* **Python**：3.10+（发布脚本）
+* **.NET SDK**：用于首次安装项目内固定版本的 WiX 4.0.4
 
 ### 2. 编译
 
 ```bash
-git clone https://github.com/shimamuraDS/Nimbus.git
-cd Nimbus
+git clone https://github.com/shimamuraDS/nimbus-weather-desktop.git
+cd nimbus-weather-desktop
 
 # 标准版 (禁用 LLM)
 cmake -G "Ninja" -DWITH_LLM=OFF -DCMAKE_BUILD_TYPE=Release -B build-standard
@@ -274,26 +275,18 @@ ctest --test-dir build-standard --output-on-failure
 
 ---
 
-## WiX MSI 打包
-
-### 1. 部署 Qt 运行时
-
-```bash
-windeployqt --qmldir ./qml --release deploy/standard/Nimbus.exe
-```
-
-### 2. 构建 MSI
+## MSI 与便携版打包
 
 ```powershell
-# 生成 WXS 定义文件
-python scripts/generate_wxs.py deploy/standard scripts/Nimbus_Standard.wxs --name "Nimbus Standard" --upgrade-code "<YOUR_GUID>"
+# 编译、执行测试并打包 AI 与 Standard 两个版本
+python scripts/build_release.py
 
-# 添加 UI 拓展库
-wix extension add WixToolset.UI.wixext
-
-# 编译 MSI 包
-wix build -ext WixToolset.UI.wixext -o scripts/Installer/Nimbus_Standard.msi scripts/Nimbus_Standard.wxs
+# 也可只打包其中一个版本
+python scripts/build_release.py --variant ai
+python scripts/build_release.py --variant standard
 ```
+
+脚本会将 WiX 4.0.4 与 UI 扩展隔离安装到 `.tools/`，避免本机其他 WiX 版本污染；Qt 依赖由 `qt_generate_deploy_qml_app_script()` 自动解析。最终 MSI、ZIP 和 `SHA256SUMS.txt` 输出到 `dist/`。
 
 ---
 
@@ -301,7 +294,7 @@ wix build -ext WixToolset.UI.wixext -o scripts/Installer/Nimbus_Standard.msi scr
 
 > [!WARNING]
 > **编译缺少 `crypt32` 链接库？**
-> Nimbus 已采用 `LoadLibrary` 动态载入方案，请勿在 CMake 中静态链接 `crypt32`，否则可能在低版本 Windows 上引发兼容性问题。
+> Nimbus Weather 已采用 `LoadLibrary` 动态载入方案，请勿在 CMake 中静态链接 `crypt32`，否则可能在低版本 Windows 上引发兼容性问题。
 
 > [!TIP]
 > **如何添加更多手动定位城市？**

@@ -58,7 +58,7 @@ Rectangle {
                         if (typeof settingsViewModel !== "undefined" && settingsViewModel.updateAvailable) {
                             settingsViewModel.openReleasePage()
                         } else {
-                            Qt.openUrlExternally("https://github.com/shimamuraDS/Nimbus")
+                            Qt.openUrlExternally("https://github.com/shimamuraDS/nimbus-weather-desktop")
                         }
                     }
                 }
@@ -67,7 +67,7 @@ Rectangle {
             Item { width: 6; height: 1 }
 
             Text {
-                text: qsTr("Nimbus")
+                text: qsTr("Nimbus Weather")
                 font: theme.titleFont
                 color: theme.primaryText
                 Layout.alignment: Qt.AlignVCenter

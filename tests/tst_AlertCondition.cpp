@@ -22,6 +22,8 @@ private slots:
         QVERIFY(Util::WeatherCode::isSevereWeather(QString::fromUtf8("雷阵雨伴有冰雹")));
         QVERIFY(Util::WeatherCode::isSevereWeather(QString::fromUtf8("沙尘暴")));
         QVERIFY(Util::WeatherCode::isSevereWeather(QString::fromUtf8("冻雨")));
+        QVERIFY(Util::WeatherCode::isSevereWeather(QString::fromUtf8("多云转暴雨")));
+        QVERIFY(Util::WeatherCode::isSevereWeather(QString::fromUtf8("晴转阴")));
     }
 
     void testTimeFormat() {
@@ -33,7 +35,7 @@ private slots:
         QCOMPARE(dt.time().hour(), 8);
 
         QString formatted = Util::TimeUtil::formatToHourlyString(dt);
-        QCOMPARE(formatted, QString("2026-05-12 08:00"));
+        QVERIFY(formatted == QStringLiteral("2026-05-12 08:00"));
     }
 
     void testIsWithinFutureHours() {
@@ -48,5 +50,5 @@ private slots:
     }
 };
 
-QTEST_MAIN(tst_AlertCondition)
+QTEST_GUILESS_MAIN(tst_AlertCondition)
 #include "tst_AlertCondition.moc"

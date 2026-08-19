@@ -8,8 +8,8 @@ import "views"
 Window {
     id: mainWindow
 
-    flags: Qt.FramelessWindowHint | Qt.WindowStaysOnTopHint | Qt.Tool
-    title: qsTr("Nimbus")
+    flags: Qt.FramelessWindowHint | Qt.WindowStaysOnTopHint
+    title: qsTr("Nimbus Weather")
     color: "transparent"
 
     property real scrX: typeof primaryScreen !== "undefined" ? primaryScreen.x : 0
@@ -25,12 +25,17 @@ Window {
     visible: typeof trayViewModel !== "undefined" ? trayViewModel.windowVisible : false
 
     onVisibleChanged: {
-        if (typeof trayViewModel !== "undefined") {
-            trayViewModel.windowVisible = visible
+        if (visible) {
+            raise()
+            requestActivate()
         }
     }
 
     Component.onCompleted: {
+        if (visible) {
+            raise()
+            requestActivate()
+        }
         if (typeof weatherViewModel !== "undefined") {
             weatherViewModel.requestData()
         }

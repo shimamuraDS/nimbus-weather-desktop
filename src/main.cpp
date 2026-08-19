@@ -26,12 +26,13 @@ int main(int argc, char *argv[])
 
     QApplication app(argc, argv);
 
-    app.setOrganizationName("EnterpriseCorp");
-    app.setOrganizationDomain("enterprise.com");
-    app.setApplicationName("Nimbus");
-    QIcon appIcon(QCoreApplication::applicationDirPath() + "/Nimbus.ico");
+    app.setOrganizationName("shimamuraDS");
+    app.setOrganizationDomain("github.com/shimamuraDS");
+    app.setApplicationName("NimbusWeather");
+    app.setApplicationDisplayName("Nimbus Weather");
+    QIcon appIcon(QCoreApplication::applicationDirPath() + "/NimbusWeather.ico");
     if (appIcon.isNull())
-        appIcon = QIcon(":/resources/icons/Nimbus.ico");
+        appIcon = QIcon(":/resources/icons/NimbusWeather.ico");
     app.setWindowIcon(appIcon);
 
     // 确保程序关闭最后一个窗口时不退出（托盘常驻）
@@ -47,6 +48,13 @@ int main(int argc, char *argv[])
     auto* weatherViewModel = new ViewModel::WeatherViewModel(weatherService, locationService, &app);
     auto* settingsViewModel = new ViewModel::SettingsViewModel(locationService, &app);
     auto* trayViewModel = new ViewModel::TrayViewModel(&app);
+
+    // Never leave the application inaccessible when Explorer's system tray is
+    // unavailable during startup. Manual launches are visible by default;
+    // auto-start remains hidden only when a working tray exists.
+    if (!QSystemTrayIcon::isSystemTrayAvailable()) {
+        trayViewModel->showWindow();
+    }
 
     // API 密钥更新后自动刷新天气数据
     QObject::connect(settingsViewModel, &ViewModel::SettingsViewModel::weatherApiKeyChanged,
@@ -72,7 +80,7 @@ int main(int argc, char *argv[])
     QObject::connect(notificationMgr.getTrayIcon(), &QSystemTrayIcon::activated,
                      trayViewModel, [trayViewModel](QSystemTrayIcon::ActivationReason reason) {
         if (reason == QSystemTrayIcon::Trigger) {
-            trayViewModel->toggleWindow();
+            trayViewModel->showWindow();
         }
     });
 
@@ -84,7 +92,7 @@ int main(int argc, char *argv[])
     QObject::connect(&notificationMgr, &Service::NotificationManager::quitRequested,
                      &app, &QApplication::quit);
 
-    const QUrl url(QStringLiteral("qrc:/Nimbus/qml/MainWindow.qml"));
+    const QUrl url(QStringLiteral("qrc:/NimbusWeather/qml/MainWindow.qml"));
     QObject::connect(
         &engine, &QQmlApplicationEngine::objectCreationFailed,
         &app, []() { QCoreApplication::exit(-1); },

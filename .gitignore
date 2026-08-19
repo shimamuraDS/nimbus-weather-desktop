@@ -17,8 +17,11 @@ build-*/
 
 # Installer output (all)
 scripts/Installer/
+scripts/*.msi
+scripts/*.zip
 
 # Generated WiX sources
+scripts/NimbusWeather_*.wxs
 scripts/Nimbus_*.wxs
 
 # windeployqt deployment output
@@ -29,3 +32,8 @@ deploy/
 
 # WiX build artifacts
 *.wixpdb
+.wix/
+.tools/
+
+# Reproducible release output
+dist/

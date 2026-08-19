@@ -12,6 +12,15 @@ class tst_HourlyMerge : public QObject {
     Q_OBJECT
 
 private slots:
+    void initTestCase() {
+        QStandardPaths::setTestModeEnabled(true);
+        QFile::remove(cacheFilePath());
+    }
+
+    void cleanupTestCase() {
+        QFile::remove(cacheFilePath());
+    }
+
     void testAppendAndDedup() {
         auto& cache = Data::WeatherCacheManager::getInstance();
 
@@ -73,7 +82,34 @@ private slots:
         }
         QVERIFY(found);
     }
+
+    void testInvalidRecordIsIgnored() {
+        auto& cache = Data::WeatherCacheManager::getInstance();
+        const int before = cache.getHourlyData().size();
+
+        QJsonArray invalid;
+        invalid.append(QJsonObject{{QStringLiteral("hour"), QStringLiteral("not-a-date")},
+                                   {QStringLiteral("info"), QJsonObject{}}});
+        cache.appendHourlyData(invalid);
+
+        QCOMPARE(cache.getHourlyData().size(), before);
+    }
+
+    void testLocationChangeClearsOldWeather() {
+        auto& cache = Data::WeatherCacheManager::getInstance();
+        QVERIFY(cache.setActiveAdcode(440300));
+        QCOMPARE(cache.getActiveAdcode(), 440300);
+        QVERIFY(cache.getHourlyData().isEmpty());
+
+        QVERIFY(!cache.setActiveAdcode(440300));
+    }
+
+private:
+    static QString cacheFilePath() {
+        return QStandardPaths::writableLocation(QStandardPaths::AppLocalDataLocation)
+            + QStringLiteral("/weather_cache.json");
+    }
 };
 
-QTEST_MAIN(tst_HourlyMerge)
+QTEST_GUILESS_MAIN(tst_HourlyMerge)
 #include "tst_HourlyMerge.moc"

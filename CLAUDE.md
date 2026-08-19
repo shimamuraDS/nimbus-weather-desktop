@@ -1,6 +1,6 @@
 # CLAUDE.md
 
-## Project: Nimbus
+## Project: Nimbus Weather
 
 Desktop weather alert app for Windows. System tray resident, auto-start, dual alert mode (official warnings + hourly analysis), dark cyberpunk UI.
 

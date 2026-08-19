@@ -1,11 +1,14 @@
 #include "WeatherCacheManager.h"
 #include "../util/TimeUtil.h"
 #include <QStandardPaths>
+#include <QCoreApplication>
 #include <QDir>
 #include <QFile>
+#include <QSaveFile>
 #include <QJsonDocument>
 #include <QDateTime>
 #include <QDebug>
+#include <algorithm>
 
 namespace Data {
 
@@ -21,6 +24,25 @@ WeatherCacheManager::WeatherCacheManager() {
         dir.mkpath(dataDir);
     }
     m_cacheFilePath = dataDir + "/weather_cache.json";
+
+#ifdef Q_OS_WIN
+    // Preserve the cache created under the previous EnterpriseCorp/Nimbus
+    // application metadata. Tests use different metadata and never enter this
+    // migration path.
+    const bool isNimbusWeather =
+        QCoreApplication::organizationName() == QStringLiteral("shimamuraDS")
+        && QCoreApplication::applicationName() == QStringLiteral("NimbusWeather");
+    if (isNimbusWeather && !QFile::exists(m_cacheFilePath)) {
+        const QString localAppData = qEnvironmentVariable("LOCALAPPDATA");
+        const QString legacyCache = QDir(localAppData).filePath(
+            QStringLiteral("EnterpriseCorp/Nimbus/weather_cache.json"));
+        if (!localAppData.isEmpty() && QFile::exists(legacyCache)
+            && !QFile::copy(legacyCache, m_cacheFilePath)) {
+            qWarning() << "[WeatherCacheManager] Failed to migrate legacy cache";
+        }
+    }
+#endif
+
     loadCache();
 }
 
@@ -28,12 +50,15 @@ void WeatherCacheManager::loadCache() {
     QFile file(m_cacheFilePath);
     if (file.open(QIODevice::ReadOnly | QIODevice::Text)) {
         QByteArray data = file.readAll();
-        QJsonDocument doc = QJsonDocument::fromJson(data);
+        QJsonParseError parseError;
+        QJsonDocument doc = QJsonDocument::fromJson(data, &parseError);
         if (!doc.isNull() && doc.isObject()) {
             m_cacheData = doc.object();
             cleanExpiredData();
             return;
         }
+        qWarning() << "[WeatherCacheManager] Ignoring corrupt cache:"
+                   << parseError.errorString();
     }
     m_cacheData = QJsonObject();
     m_cacheData["hourly_data"] = QJsonArray();
@@ -42,24 +67,48 @@ void WeatherCacheManager::loadCache() {
 }
 
 void WeatherCacheManager::saveCache() {
-    QFile file(m_cacheFilePath);
+    QSaveFile file(m_cacheFilePath);
     if (file.open(QIODevice::WriteOnly | QIODevice::Text)) {
         QJsonDocument doc(m_cacheData);
-        file.write(doc.toJson());
-        file.close();
+        const QByteArray data = doc.toJson(QJsonDocument::Compact);
+        if (file.write(data) != data.size() || !file.commit()) {
+            qWarning() << "[WeatherCacheManager] Failed to commit cache:"
+                       << file.errorString();
+        }
+    } else {
+        qWarning() << "[WeatherCacheManager] Failed to open cache for writing:"
+                   << file.errorString();
     }
+}
+
+bool WeatherCacheManager::setActiveAdcode(int adcode) {
+    if (adcode < 100000 || adcode > 999999) return false;
+    if (getActiveAdcode() == adcode) return false;
+
+    // This cache stores one location at a time. Never display records from the
+    // previous city under a newly selected city name.
+    m_cacheData["adcode"] = adcode;
+    m_cacheData["hourly_data"] = QJsonArray();
+    m_cacheData["future_forecast"] = QJsonArray();
+    m_cacheData["current_alarms"] = QJsonArray();
+    saveCache();
+    return true;
+}
+
+int WeatherCacheManager::getActiveAdcode() const {
+    return m_cacheData.value(QStringLiteral("adcode")).toInt();
 }
 
 void WeatherCacheManager::cleanExpiredData() {
     QJsonArray hourlyData = m_cacheData["hourly_data"].toArray();
     QJsonArray validData;
-    QDateTime now = QDateTime::currentDateTime();
+    const QDateTime cutoff = QDateTime::currentDateTime().addDays(-7);
 
     for (int i = 0; i < hourlyData.size(); ++i) {
         QJsonObject hourObj = hourlyData[i].toObject();
         QString hourStr = hourObj["hour"].toString();
         QDateTime dt = Util::TimeUtil::parseTencentHour(hourStr);
-        if (dt.isValid() && dt.daysTo(now) <= 7) {
+        if (dt.isValid() && dt >= cutoff) {
             validData.append(hourObj);
         }
     }
@@ -73,7 +122,8 @@ void WeatherCacheManager::appendHourlyData(const QJsonArray& forecastHoursInfos)
 
     QHash<QString, int> existingHours;
     for (int i = 0; i < hourlyData.size(); ++i) {
-        existingHours.insert(hourlyData[i].toObject()["hour"].toString(), i);
+        const QString hour = hourlyData[i].toObject()["hour"].toString();
+        if (!hour.isEmpty()) existingHours.insert(hour, i);
     }
 
     for (int i = 0; i < forecastHoursInfos.size(); ++i) {
@@ -81,6 +131,10 @@ void WeatherCacheManager::appendHourlyData(const QJsonArray& forecastHoursInfos)
         QString hourStr = hourItem["hour"].toString();
 
         QDateTime dt = Util::TimeUtil::parseTencentHour(hourStr);
+        if (!dt.isValid() || !hourItem["info"].isObject()) {
+            qWarning() << "[WeatherCacheManager] Skipping invalid hourly record";
+            continue;
+        }
         QString standardizedHour = Util::TimeUtil::formatToHourlyString(dt);
         hourItem["hour"] = standardizedHour;
 
@@ -91,6 +145,19 @@ void WeatherCacheManager::appendHourlyData(const QJsonArray& forecastHoursInfos)
             existingHours.insert(standardizedHour, hourlyData.size() - 1);
         }
     }
+
+    QList<QJsonObject> sortedHours;
+    sortedHours.reserve(hourlyData.size());
+    for (const QJsonValue& value : hourlyData) {
+        if (value.isObject()) sortedHours.append(value.toObject());
+    }
+    std::sort(sortedHours.begin(), sortedHours.end(),
+              [](const QJsonObject& lhs, const QJsonObject& rhs) {
+        return lhs["hour"].toString() < rhs["hour"].toString();
+    });
+
+    hourlyData = QJsonArray();
+    for (const QJsonObject& hour : sortedHours) hourlyData.append(hour);
 
     m_cacheData["hourly_data"] = hourlyData;
     cleanExpiredData();

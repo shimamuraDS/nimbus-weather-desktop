@@ -3,7 +3,7 @@
         <file alias="qtquickcontrols2.conf">qtquickcontrols2.conf</file>
     </qresource>
     <qresource prefix="/resources/icons">
-        <file alias="Nimbus.ico">icons/Nimbus.ico</file>
+        <file alias="NimbusWeather.ico">icons/NimbusWeather.ico</file>
     </qresource>
     <qresource prefix="/resources/icons/weather">
         <file alias="sunny.png">icons/sunny.png</file>

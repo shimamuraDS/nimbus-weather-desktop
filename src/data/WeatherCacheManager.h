@@ -25,6 +25,8 @@ public:
     WeatherCacheManager(const WeatherCacheManager&) = delete;
     WeatherCacheManager& operator=(const WeatherCacheManager&) = delete;
 
+    bool setActiveAdcode(int adcode);
+    int getActiveAdcode() const;
     void appendHourlyData(const QJsonArray& forecastHoursInfos);
     void updateFutureForecast(const QJsonArray& futureInfos);
     void updateCurrentAlarms(const QJsonArray& alarms);

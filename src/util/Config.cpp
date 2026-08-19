@@ -4,8 +4,20 @@
 #include <QCoreApplication>
 #include <QDir>
 #include <QFile>
+#include <QDebug>
+#include <QTime>
+#include <algorithm>
 
 namespace Util {
+
+namespace {
+
+bool isValidAlertTime(const QString& value) {
+    return value.size() == 5
+        && QTime::fromString(value, QStringLiteral("HH:mm")).isValid();
+}
+
+} // namespace
 
 Config& Config::getInstance() {
     static Config instance;
@@ -30,6 +42,26 @@ Config::Config() {
 
     m_iniSettings = std::make_unique<QSettings>(iniPath, QSettings::IniFormat);
     m_userSettings = std::make_unique<QSettings>();
+
+    // Nimbus Weather uses new application metadata. Copy the previous
+    // EnterpriseCorp/Nimbus settings once so existing API keys and alert
+    // preferences survive the brand migration.
+    const bool isNimbusWeather =
+        QCoreApplication::organizationName() == QStringLiteral("shimamuraDS")
+        && QCoreApplication::applicationName() == QStringLiteral("NimbusWeather");
+    if (isNimbusWeather
+        && !m_userSettings->contains(QStringLiteral("General/BrandMigrationCompleted"))) {
+        if (m_userSettings->allKeys().isEmpty()) {
+            QSettings legacySettings(QStringLiteral("EnterpriseCorp"),
+                                     QStringLiteral("Nimbus"));
+            const QStringList legacyKeys = legacySettings.allKeys();
+            for (const QString& key : legacyKeys) {
+                m_userSettings->setValue(key, legacySettings.value(key));
+            }
+        }
+        m_userSettings->setValue(QStringLiteral("General/BrandMigrationCompleted"), true);
+        m_userSettings->sync();
+    }
 
     setAutoStart(isAutoStart());
 }
@@ -116,6 +148,8 @@ void Config::setWeatherApiKey(const QString& key) {
     if (!encrypted.isEmpty()) {
         m_userSettings->setValue("API/WeatherKey",
             QString::fromLatin1(encrypted.toBase64()));
+    } else {
+        qWarning() << "[Config] Failed to encrypt weather API key";
     }
 }
 
@@ -150,9 +184,12 @@ void Config::setAutoStart(bool autoStart) {
                   QSettings::NativeFormat);
     if (autoStart) {
         QString appPath = QDir::toNativeSeparators(QCoreApplication::applicationFilePath());
-        reg.setValue("Nimbus", appPath);
+        reg.remove(QStringLiteral("Nimbus"));
+        reg.setValue(QStringLiteral("Nimbus Weather"),
+                     QStringLiteral("\"%1\" -hidden").arg(appPath));
     } else {
-        reg.remove("Nimbus");
+        reg.remove(QStringLiteral("Nimbus"));
+        reg.remove(QStringLiteral("Nimbus Weather"));
     }
 }
 
@@ -187,6 +224,8 @@ int Config::getAdvanceMinutesFor(const QString& alertTime) const {
 }
 
 void Config::setAdvanceMinutesFor(const QString& alertTime, int minutes) {
+    if (!isValidAlertTime(alertTime)) return;
+    minutes = qBound(0, minutes, 24 * 60);
     QStringList times = getAlertTimes();
     QStringList advances = getAlertAdvanceMinutes();
     int idx = times.indexOf(alertTime);
@@ -217,6 +256,7 @@ void Config::sortAlertsTogether(QStringList& times, QStringList& advances) {
 }
 
 void Config::addAlertTime(const QString& time) {
+    if (!isValidAlertTime(time)) return;
     QStringList times = getAlertTimes();
     if (!times.contains(time)) {
         QStringList advances = getAlertAdvanceMinutes();
@@ -241,6 +281,7 @@ void Config::removeAlertTime(const QString& time) {
 }
 
 void Config::updateAlertTime(const QString& oldTime, const QString& newTime) {
+    if (!isValidAlertTime(oldTime) || !isValidAlertTime(newTime)) return;
     QStringList times = getAlertTimes();
     QStringList advances = getAlertAdvanceMinutes();
     int idx = times.indexOf(oldTime);
@@ -277,7 +318,11 @@ QString Config::getLLMApiKey() const {
     QByteArray encrypted = QByteArray::fromBase64(
         m_userSettings->value("LLM/ApiKey", "").toString().toUtf8());
     if (encrypted.isEmpty()) return QString();
-    QByteArray plain = decryptDPAPI(encrypted, L"Nimbus LLM");
+    QByteArray plain = decryptDPAPI(encrypted, L"Nimbus Weather LLM");
+    if (plain.isEmpty()) {
+        // Compatibility with API keys saved before the application rename.
+        plain = decryptDPAPI(encrypted, L"Nimbus LLM");
+    }
     return QString::fromUtf8(plain);
 }
 
@@ -286,9 +331,11 @@ void Config::setLLMApiKey(const QString& key) {
         m_userSettings->setValue("LLM/ApiKey", "");
         return;
     }
-    QByteArray encrypted = encryptDPAPI(key.toUtf8(), L"Nimbus LLM");
+    QByteArray encrypted = encryptDPAPI(key.toUtf8(), L"Nimbus Weather LLM");
     if (!encrypted.isEmpty()) {
         m_userSettings->setValue("LLM/ApiKey", QString::fromLatin1(encrypted.toBase64()));
+    } else {
+        qWarning() << "[Config] Failed to encrypt LLM API key";
     }
 }
 

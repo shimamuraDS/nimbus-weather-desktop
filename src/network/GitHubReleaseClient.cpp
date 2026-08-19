@@ -3,7 +3,9 @@
 #include <QNetworkReply>
 #include <QJsonDocument>
 #include <QJsonObject>
+#include <QTimer>
 #include <QDebug>
+#include <memory>
 
 namespace Network {
 
@@ -18,12 +20,28 @@ void GitHubReleaseClient::checkLatestRelease(const QString& repoOwner, const QSt
     QUrl url(QString("https://api.github.com/repos/%1/%2/releases/latest")
              .arg(repoOwner, repoName));
     QNetworkRequest request(url);
-    request.setRawHeader("User-Agent", "Nimbus");
+    request.setRawHeader("User-Agent", "NimbusWeather/1.0");
     request.setRawHeader("Accept", "application/vnd.github+json");
 
     QNetworkReply* reply = m_manager->get(request);
-    connect(reply, &QNetworkReply::finished, this, [this, reply]() {
+    auto timedOut = std::make_shared<bool>(false);
+    auto* timer = new QTimer(reply);
+    timer->setSingleShot(true);
+    connect(timer, &QTimer::timeout, reply, [reply, timedOut]() {
+        *timedOut = true;
+        reply->abort();
+    });
+    timer->start(10000);
+
+    connect(reply, &QNetworkReply::finished, this, [this, reply, timer, timedOut]() {
+        timer->stop();
         reply->deleteLater();
+
+        if (*timedOut) {
+            qDebug() << "[GitHubReleaseClient] Request timed out";
+            emit errorOccurred(QStringLiteral("Request timed out"));
+            return;
+        }
 
         if (reply->error() != QNetworkReply::NoError) {
             qDebug() << "[GitHubReleaseClient] Network error:" << reply->errorString();

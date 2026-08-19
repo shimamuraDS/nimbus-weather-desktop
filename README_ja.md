@@ -1,8 +1,8 @@
 <p align="center">
-  <img src="resources/icons/Nimbus.ico" width="96" alt="Nimbus Logo" />
+  <img src="resources/icons/NimbusWeather.ico" width="96" alt="Nimbus Weather Logo" />
 </p>
 
-<h1 align="center" style="font-size: 2.5em; font-weight: bold; margin-bottom: 0.2em; color: #00f0ff;">Nimbus</h1>
+<h1 align="center" style="font-size: 2.5em; font-weight: bold; margin-bottom: 0.2em; color: #00f0ff;">Nimbus Weather</h1>
 
 <p align="center">
   <strong>Windows デスクトップ天気アラートアプリ</strong>
@@ -17,7 +17,7 @@
 <p align="center">
   <img src="https://img.shields.io/badge/C%2B%2B-17-00599C?style=for-the-badge&logo=c%2B%2B&logoColor=white" alt="C++17" />
   <img src="https://img.shields.io/badge/Qt-6.8%20LTS-41CD52?style=for-the-badge&logo=qt&logoColor=white" alt="Qt 6.8 LTS" />
-  <img src="https://img.shields.io/badge/CMake-3.16%2B-064F8C?style=for-the-badge&logo=cmake&logoColor=white" alt="CMake 3.16+" />
+  <img src="https://img.shields.io/badge/CMake-3.30%2B-064F8C?style=for-the-badge&logo=cmake&logoColor=white" alt="CMake 3.30+" />
   <img src="https://img.shields.io/badge/Security-Windows%20DPAPI-ff7b90?style=for-the-badge&logo=windows&logoColor=white" alt="Windows DPAPI" />
   <img src="https://img.shields.io/badge/AI-DeepSeek%20%2F%20LLM-00f0ff?style=for-the-badge&logo=openai&logoColor=white" alt="DeepSeek LLM" />
   <img src="https://img.shields.io/badge/UI-Cyberpunk%20QML-a78bfa?style=for-the-badge&logo=qt&logoColor=white" alt="Cyberpunk QML" />
@@ -26,7 +26,7 @@
 </p>
 
 <p align="center" style="font-size: 1.1em; color: #cbd5e1; max-width: 750px; margin: 0 auto; line-height: 1.6;">
-  Nimbusは、ダークサイバーパンクなGlassmorphism UIとLLM搭載のインテリジェント通知を特徴とするWindowsデスクトップ天気アプリです。システムトレイ常駐型で動作し、1時間ごとのタイムライン、柔軟なマルチポイントアラート、公式災害警報とスマートな時間別モニタリングを組み合わせたデュアル警告システムを提供します。
+  Nimbus Weatherは、ダークサイバーパンクなGlassmorphism UIとLLM搭載のインテリジェント通知を特徴とするWindowsデスクトップ天気アプリです。システムトレイ常駐型で動作し、1時間ごとのタイムライン、柔軟なマルチポイントアラート、公式災害警報とスマートな時間別モニタリングを組み合わせたデュアル警告システムを提供します。
 </p>
 
 ---
@@ -100,14 +100,14 @@
 ### セキュリティ統合
 - **トレイ常駐と自動起動**: システムトレイ右クリックメニュー、Windowsレジストリ`Run`キーによる自動起動。
 - **Windows DPAPI暗号化**: APIキーとLLMトークンをWindows DPAPIで暗号化、現在のユーザーにバインド — 設定ファイルは他のデバイスで復号化できません。
-- **WiX MSIインストーラー**: カスタムインストールパス、スタートアップ登録、クリーンアンインストール。
+- **再現可能なWindowsリリース**: CMake InstallとQt Deployment APIで対応するQt/QML/MinGW依存関係を収集し、CPackからインストール先を選択できるWiX 4 MSIとポータブルZIPを生成。
 - **自動アップデートチェック**: 起動時にGitHub Releasesを静かに確認し、新しいバージョンがある場合、ツールバーのGitHubアイコンに赤いドットが表示されます。
 
 ---
 
 ## バージョン比較とダウンロード
 
-Nimbusは単一コードベース、デュアルコンパイル条件分岐方式を採用し、2つの独立したインストーラーを生成します。
+Nimbus Weatherは単一コードベース、デュアルコンパイル条件分岐方式を採用し、2つの独立したインストーラーを生成します。
 
 | 項目 | Standard 標準版 | AI 智能版 |
 |:---|:---:|:---:|
@@ -115,13 +115,13 @@ Nimbusは単一コードベース、デュアルコンパイル条件分岐方�
 | **通知ロジック** | 固定中国語テンプレート | DeepSeek自然言語 + APIオフライン時自動テンプレートフォールバック |
 | **外部API依存** | Tencent LBS WebService APIのみ | Tencent LBS API + DeepSeek (OpenAI互換) API |
 | **セキュアストレージ** | DPAPI暗号化Tencent開発キー | DPAPIデュアルキー暗号化（Tencentキー + LLMキー） |
-| **パッケージ成果物** | `Nimbus_Standard.msi` | `Nimbus_AI.msi` |
-| **ポータブルアーカイブ** | `Nimbus-v1.0.0-Standard.zip` | `Nimbus-v1.0.0-AI.zip` |
+| **パッケージ成果物** | `NimbusWeather-1.0.2-win64-Standard.msi` | `NimbusWeather-1.0.2-win64-AI.msi` |
+| **ポータブルアーカイブ** | `NimbusWeather-1.0.2-win64-Standard.zip` | `NimbusWeather-1.0.2-win64-AI.zip` |
 
 > [!NOTE]
 > AI版はLLMスイッチが無効の場合、実行時オーバーヘッドと基盤依存関係は標準版と同じです。
 
-[GitHub Releasesで最新バージョンをダウンロード](https://github.com/shimamuraDS/Nimbus/releases)
+[GitHub Releasesで最新バージョンをダウンロード](https://github.com/shimamuraDS/nimbus-weather-desktop/releases)
 
 ---
 
@@ -152,11 +152,11 @@ Nimbusは単一コードベース、デュアルコンパイル条件分岐方�
 |:---|:---|:---|
 | **開発言語** | C++17 · QML (Qt Quick) | ネイティブ実行効率 + GPU加速宣言型UI |
 | **コアフレームワーク** | Qt 6.8 LTS | Core / Gui / Qml / Quick / Network / Widgets |
-| **ビルドシステム** | CMake 3.16+ · Ninja | モダンC++ビルド、Ninjaインクリメンタルコンパイル |
+| **ビルドシステム** | CMake 3.30+ · Ninja | モダンC++ビルド、Ninjaインクリメンタルコンパイル |
 | **デザインパターン** | MVVM + 3層サービスアーキテクチャ | UI双方向データバインディング、Viewにビジネスロジックなし |
 | **外部サービス** | Tencent LBS API + OpenAI互換ネットワーク層 | IP測位、天気警報、リアルタイム/毎時/複数日天気 |
 | **暗号化** | Windows DPAPI (crypt32.dll動的ロード) | 静的依存なし、Windowsディストリビューション間互換 |
-| **パッケージング** | WiX Toolset v7 | Windowsインストーラー標準、インストール/アップグレード/アンインストール対応 |
+| **パッケージング** | Qt Deployment API · CPack · WiX 4.0.4 | 単一マニフェストからMSI/ZIPを生成、インストール先選択・サイレント導入・メジャーアップグレード対応 |
 | **テスト** | QtTest + CTest | 時間枠マージ、マルチソースアラート判定、HTTP非同期リトライをカバー |
 
 ---
@@ -247,15 +247,16 @@ graph TD
 ### 1. 前提条件
 
 * **Qt SDK**: Qt 6.8+ (MinGW 64-bitビルドキット)
-* **CMake**: v3.16以上
+* **CMake**: v3.30以上
 * **Ninja**: CMakeジェネレーターとして推奨
-* **WiX Toolset**: v7+（パッケージングのみ）
+* **Python**: 3.10+（リリーススクリプト）
+* **.NET SDK**: リポジトリ内に固定版WiX 4.0.4を導入するために使用
 
 ### 2. ビルド
 
 ```bash
-git clone https://github.com/shimamuraDS/Nimbus.git
-cd Nimbus
+git clone https://github.com/shimamuraDS/nimbus-weather-desktop.git
+cd nimbus-weather-desktop
 
 # 標準版 (LLM無効)
 cmake -G "Ninja" -DWITH_LLM=OFF -DCMAKE_BUILD_TYPE=Release -B build-standard
@@ -274,26 +275,18 @@ ctest --test-dir build-standard --output-on-failure
 
 ---
 
-## WiX MSIパッケージング
-
-### 1. Qtランタイムの配置
-
-```bash
-windeployqt --qmldir ./qml --release deploy/standard/Nimbus.exe
-```
-
-### 2. MSIのビルド
+## MSIとポータブル版のパッケージング
 
 ```powershell
-# WXS定義ファイルの生成
-python scripts/generate_wxs.py deploy/standard scripts/Nimbus_Standard.wxs --name "Nimbus Standard" --upgrade-code "<YOUR_GUID>"
+# AI版とStandard版をビルド・テスト・パッケージング
+python scripts/build_release.py
 
-# UI拡張ライブラリの追加
-wix extension add WixToolset.UI.wixext
-
-# MSIパッケージのコンパイル
-wix build -ext WixToolset.UI.wixext -o scripts/Installer/Nimbus_Standard.msi scripts/Nimbus_Standard.wxs
+# 片方のエディションのみも指定可能
+python scripts/build_release.py --variant ai
+python scripts/build_release.py --variant standard
 ```
+
+スクリプトは固定版WiX 4.0.4とUI拡張を`.tools/`に分離して導入し、他のWiXバージョンによる影響を防ぎます。Qt依存関係は`qt_generate_deploy_qml_app_script()`が解決し、MSI、ZIP、`SHA256SUMS.txt`は`dist/`に出力されます。
 
 ---
 
@@ -301,7 +294,7 @@ wix build -ext WixToolset.UI.wixext -o scripts/Installer/Nimbus_Standard.msi scr
 
 > [!WARNING]
 > **コンパイル時に`crypt32`リンカーライブラリが見つかりませんか？**
-> Nimbusは`LoadLibrary`による動的ロードを採用しています。CMakeで`crypt32`を静的にリンクしないでください。古いバージョンのWindowsで互換性の問題が発生する可能性があります。
+> Nimbus Weatherは`LoadLibrary`による動的ロードを採用しています。CMakeで`crypt32`を静的にリンクしないでください。古いバージョンのWindowsで互換性の問題が発生する可能性があります。
 
 > [!TIP]
 > **手動で位置都市を追加する方法は？**

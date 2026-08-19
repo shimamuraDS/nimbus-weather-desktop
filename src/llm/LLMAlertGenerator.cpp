@@ -8,6 +8,18 @@
 
 namespace LLM {
 
+namespace {
+
+QString jsonScalarToString(const QJsonValue& value) {
+    if (value.isString()) return value.toString();
+    if (value.isDouble()) return QString::number(value.toDouble());
+    if (value.isBool()) return value.toBool() ? QStringLiteral("true")
+                                               : QStringLiteral("false");
+    return QString();
+}
+
+} // namespace
+
 LLMAlertGenerator::LLMAlertGenerator(QObject* parent) : QObject(parent) {}
 
 void LLMAlertGenerator::generateAlert(const QJsonArray& hourlyData,
@@ -30,9 +42,15 @@ void LLMAlertGenerator::generateAlert(const QJsonArray& hourlyData,
             QJsonObject entry;
             entry["time"] = hourStr.mid(11, 5);
             entry["weather"] = info["weather"].toString();
-            entry["temperature"] = info["temperature"].toString();
-            entry["humidity"] = info["humidity"].toString();
-            entry["wind"] = info["wind"].toString();
+            entry["temperature"] = jsonScalarToString(info["temperature"]);
+            entry["humidity"] = jsonScalarToString(info["humidity"]);
+            QString wind = info["wind"].toString();
+            if (wind.isEmpty()) {
+                wind = info["wind_direction"].toString();
+                const QString power = info["wind_power"].toString();
+                if (!power.isEmpty()) wind += QStringLiteral(" ") + power;
+            }
+            entry["wind"] = wind.trimmed();
             forecastArray.append(entry);
         }
     }

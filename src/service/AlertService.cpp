@@ -29,7 +29,8 @@ void AlertService::checkDefaultAlert() {
     QJsonArray alarms = cache.getCurrentAlarms();
     if (!alarms.isEmpty()) {
         QJsonObject alarm = alarms.first().toObject();
-        QString alarmKey = alarm["title"].toString();
+        QString alarmKey = alarm["title"].toString()
+            + QLatin1Char('|') + alarm["pub_content"].toString();
         if (alarmKey == m_lastDefaultAlertKey) return;
         m_lastDefaultAlertKey = alarmKey;
         NotificationManager::getInstance().showWeatherAlert(
@@ -43,6 +44,7 @@ void AlertService::checkDefaultAlert() {
     // Find nearest non-sunny weather within the next 1 hour
     QString severeTime;
     QString severeDesc;
+    QString severeEventKey;
     for (int i = 0; i < hourlyData.size(); ++i) {
         QJsonObject hourObj = hourlyData[i].toObject();
         QString hourStr = hourObj["hour"].toString();
@@ -55,6 +57,7 @@ void AlertService::checkDefaultAlert() {
             if (Util::WeatherCode::isSevereWeather(weatherDesc)) {
                 severeTime = hourStr.mid(11, 5);
                 severeDesc = weatherDesc;
+                severeEventKey = hourStr + QLatin1Char('|') + severeDesc;
                 break;
             }
         }
@@ -66,9 +69,8 @@ void AlertService::checkDefaultAlert() {
     }
 
     // Dedup: don't re-alert for the same weather event
-    QString eventKey = severeTime + severeDesc;
-    if (eventKey == m_lastDefaultAlertKey) return;
-    m_lastDefaultAlertKey = eventKey;
+    if (severeEventKey == m_lastDefaultAlertKey) return;
+    m_lastDefaultAlertKey = severeEventKey;
 
     // Get current weather
     QString currentHourKey = QDateTime::currentDateTime().toString("yyyy-MM-dd HH:00");
@@ -81,7 +83,7 @@ void AlertService::checkDefaultAlert() {
         }
     }
 
-    QString title = QString::fromUtf8("Nimbus：未来1小时将有") + severeDesc;
+    QString title = QString::fromUtf8("Nimbus Weather：未来1小时将有") + severeDesc;
     QString content = QString::fromUtf8("当前天气：") + currentWeather + "\n"
         + QString::fromUtf8("预计 ") + severeTime
         + QString::fromUtf8(" 左右将出现") + severeDesc
@@ -179,14 +181,14 @@ void AlertService::checkAlerts() {
             else
                 durStr = QString::number(dM) + QString::fromUtf8("分钟");
 
-            title = QString::fromUtf8("Nimbus：未来") + durStr + QString::fromUtf8("内天气");
+            title = QString::fromUtf8("Nimbus Weather：未来") + durStr + QString::fromUtf8("内天气");
 
             for (const auto& seg : segments) {
                 content += seg.time + QString::fromUtf8("：") + seg.desc + "\n";
             }
         } else {
             const auto& seg = segments.first();
-            title = QString::fromUtf8("Nimbus：未来1小时天气");
+            title = QString::fromUtf8("Nimbus Weather：未来1小时天气");
             content += QString::fromUtf8("预计 ") + seg.time
                 + QString::fromUtf8(" 左右为") + seg.desc;
         }
@@ -203,7 +205,7 @@ void AlertService::checkAlerts() {
                     NotificationManager::getInstance().showWeatherAlert(fb.first, fb.second);
                 } else {
                     NotificationManager::getInstance().showWeatherAlert(
-                        QString::fromUtf8("Nimbus"), llmText);
+                        QString::fromUtf8("Nimbus Weather"), llmText);
                 }
                 generator->deleteLater();
             });

@@ -1,4 +1,5 @@
 #include "WeatherCode.h"
+#include <QStringList>
 
 namespace Util {
 
@@ -28,9 +29,16 @@ QString WeatherCode::getIconByWeather(const QString& weatherStr) {
 }
 
 bool WeatherCode::isSevereWeather(const QString& weatherStr) {
-    if (weatherStr.isEmpty()) return false;
-    return !weatherStr.contains(QString::fromUtf8("晴"))
-        && !weatherStr.contains(QString::fromUtf8("多云"));
+    const QString weather = weatherStr.trimmed();
+    if (weather.isEmpty()) return false;
+
+    static const QStringList benignWeather = {
+        QStringLiteral("晴"),
+        QStringLiteral("多云"),
+        QStringLiteral("晴间多云"),
+        QStringLiteral("多云间晴")
+    };
+    return !benignWeather.contains(weather);
 }
 
 } // namespace Util

@@ -4,7 +4,9 @@
 namespace ViewModel {
 
 TrayViewModel::TrayViewModel(QObject* parent)
-    : QObject(parent), m_windowVisible(false)
+    : QObject(parent),
+      m_windowVisible(!QCoreApplication::arguments().contains(
+          QStringLiteral("-hidden"), Qt::CaseInsensitive))
 {}
 
 bool TrayViewModel::windowVisible() const {

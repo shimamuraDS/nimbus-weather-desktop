@@ -1,8 +1,18 @@
 #!/usr/bin/env python3
-"""Generate WiX v4 .wxs from a deploy directory."""
+"""Legacy WiX v4 source generator.
+
+The supported release pipeline is scripts/build_release.py, which uses CMake
+Install, Qt's deployment API and CPack. This module remains only for inspecting
+or reproducing packages created by the earlier hand-authored WiX workflow.
+"""
 import os, sys, uuid, argparse, hashlib
 from pathlib import Path
 from xml.sax.saxutils import escape
+
+APP_DISPLAY_NAME = 'Nimbus Weather'
+APP_VERSION = '1.0.2'
+EXECUTABLE_NAME = 'NimbusWeather.exe'
+ICON_FILENAME = 'NimbusWeather.ico'
 
 INVALID_CHARS = set('- .+~!@#$%^&*()=[]{}|;:\'",<>/?`')
 VALID_REPLACEMENTS = {
@@ -90,7 +100,17 @@ def write_components(fh, tree: dict, prefix_parts: tuple, indent: int):
     walk(tree, prefix_parts)
     return counter[0]
 
-def generate_wxs(deploy_dir: Path, output: Path, product_name: str, upgrade_code: str):
+def generate_wxs(deploy_dir: Path, output: Path, product_name: str,
+                 version: str, upgrade_code: str):
+    deploy_dir = deploy_dir.resolve()
+    output = output.resolve()
+    executable_path = deploy_dir / EXECUTABLE_NAME
+    icon_path = Path(__file__).resolve().parent.parent / 'resources' / ICON_FILENAME
+    if not executable_path.is_file():
+        raise FileNotFoundError(f'Missing application executable: {executable_path}')
+    if not icon_path.is_file():
+        raise FileNotFoundError(f'Missing application icon: {icon_path}')
+
     tree = build_dir_tree(deploy_dir)
 
     os.chdir(deploy_dir)
@@ -99,22 +119,22 @@ def generate_wxs(deploy_dir: Path, output: Path, product_name: str, upgrade_code
         f.write('<?xml version="1.0" encoding="utf-8"?>\n')
         f.write('<Wix xmlns="http://wixtoolset.org/schemas/v4/wxs"\n')
         f.write('     xmlns:ui="http://wixtoolset.org/schemas/v4/wxs/ui">\n')
-        f.write(f'  <Package Name="{escape(product_name)}" Manufacturer="Nimbus"\n')
-        f.write(f'           Version="1.0.0" UpgradeCode="{upgrade_code}"\n')
+        f.write(f'  <Package Name="{escape(product_name)}" Manufacturer="shimamuraDS"\n')
+        f.write(f'           Version="{escape(version)}" UpgradeCode="{upgrade_code}"\n')
         f.write( '           Scope="perMachine" Language="2052" Codepage="936">\n\n')
         f.write( '    <MajorUpgrade DowngradeErrorMessage="A newer version is already installed." />\n\n')
         f.write( '    <MediaTemplate EmbedCab="yes" />\n\n')
         f.write( '    <ui:WixUI Id="WixUI_InstallDir" />\n')
         f.write( '    <Property Id="WIXUI_INSTALLDIR" Value="INSTALLFOLDER" />\n\n')
-        ico_path = str(deploy_dir / 'Nimbus.ico').replace('\\', '\\\\')
+        ico_path = str(icon_path).replace('\\', '\\\\')
         f.write(f'    <Icon Id="NimbusIcon" SourceFile="{ico_path}" />\n')
         f.write( '    <Property Id="ARPPRODUCTICON" Value="NimbusIcon" />\n')
-        f.write( '    <Property Id="WIXUI_EXITDIALOGOPTIONALCHECKBOXTEXT" Value="&#x542F;&#x52A8; Nimbus" />\n')
-        f.write( '    <Property Id="WixShellExecTarget" Value="[INSTALLFOLDER]Nimbus.exe" />\n\n')
+        f.write( '    <Property Id="WIXUI_EXITDIALOGOPTIONALCHECKBOXTEXT" Value="&#x542F;&#x52A8; Nimbus Weather" />\n')
+        f.write( '    <Property Id="WixShellExecTarget" Value="[INSTALLFOLDER]NimbusWeather.exe" />\n\n')
 
         # Directory tree
         f.write('    <StandardDirectory Id="ProgramFiles64Folder">\n')
-        f.write('      <Directory Id="INSTALLFOLDER" Name="Nimbus">\n')
+        f.write('      <Directory Id="INSTALLFOLDER" Name="Nimbus Weather">\n')
 
         write_dir_xml(f, tree, (), 8)
 
@@ -123,7 +143,7 @@ def generate_wxs(deploy_dir: Path, output: Path, product_name: str, upgrade_code
 
         # Start Menu - use a non-standard ID
         f.write('    <StandardDirectory Id="ProgramMenuFolder">\n')
-        f.write('      <Directory Id="NimbusStartMenuFolder" Name="Nimbus" />\n')
+        f.write('      <Directory Id="NimbusWeatherStartMenuFolder" Name="Nimbus Weather" />\n')
         f.write('    </StandardDirectory>\n\n')
 
         # Desktop
@@ -135,36 +155,36 @@ def generate_wxs(deploy_dir: Path, output: Path, product_name: str, upgrade_code
         f.write('    </ComponentGroup>\n\n')
 
         # Shortcuts
-        f.write('    <ComponentGroup Id="ShortcutComponents" Directory="NimbusStartMenuFolder">\n')
+        f.write('    <ComponentGroup Id="ShortcutComponents" Directory="NimbusWeatherStartMenuFolder">\n')
         f.write('      <Component Id="StartMenuShortcut" Guid="*">\n')
-        f.write('        <Shortcut Id="StartMenuSC" Name="Nimbus"\n')
-        f.write('                  Target="[INSTALLFOLDER]Nimbus.exe"\n')
+        f.write('        <Shortcut Id="StartMenuSC" Name="Nimbus Weather"\n')
+        f.write('                  Target="[INSTALLFOLDER]NimbusWeather.exe"\n')
         f.write('                  Icon="NimbusIcon"\n')
         f.write('                  WorkingDirectory="INSTALLFOLDER" />\n')
-        f.write('        <RegistryValue Root="HKCU" Key="Software\\Nimbus"\n')
+        f.write('        <RegistryValue Root="HKCU" Key="Software\\NimbusWeather"\n')
         f.write('                       Name="installed" Type="integer" Value="1" KeyPath="yes" />\n')
         f.write('      </Component>\n')
         f.write('    </ComponentGroup>\n\n')
 
         f.write('    <ComponentGroup Id="DesktopShortcutComponents" Directory="DesktopFolder">\n')
         f.write('      <Component Id="DesktopShortcut" Guid="*">\n')
-        f.write('        <Shortcut Id="DesktopSC" Name="Nimbus"\n')
-        f.write('                  Target="[INSTALLFOLDER]Nimbus.exe"\n')
+        f.write('        <Shortcut Id="DesktopSC" Name="Nimbus Weather"\n')
+        f.write('                  Target="[INSTALLFOLDER]NimbusWeather.exe"\n')
         f.write('                  Icon="NimbusIcon"\n')
         f.write('                  WorkingDirectory="INSTALLFOLDER" />\n')
-        f.write('        <RegistryValue Root="HKCU" Key="Software\\Nimbus"\n')
+        f.write('        <RegistryValue Root="HKCU" Key="Software\\NimbusWeather"\n')
         f.write('                       Name="desktopInstalled" Type="integer" Value="1" KeyPath="yes" />\n')
         f.write('      </Component>\n')
         f.write('    </ComponentGroup>\n\n')
 
         # Uninstall shortcut in install directory
         f.write('    <Component Id="UninstallShortcut" Guid="*" Directory="INSTALLFOLDER">\n')
-        f.write('      <Shortcut Id="UninstallSC" Name="Uninstall Nimbus"\n')
+        f.write('      <Shortcut Id="UninstallSC" Name="Uninstall Nimbus Weather"\n')
         f.write('                Target="[SystemFolder]msiexec.exe"\n')
         f.write('                Arguments="/x [ProductCode]"\n')
-        f.write('                Description="Uninstall Nimbus"\n')
+        f.write('                Description="Uninstall Nimbus Weather"\n')
         f.write('                WorkingDirectory="INSTALLFOLDER" />\n')
-        f.write('      <RegistryValue Root="HKCU" Key="Software\\Nimbus"\n')
+        f.write('      <RegistryValue Root="HKCU" Key="Software\\NimbusWeather"\n')
         f.write('                     Name="uninstallShortcut" Type="integer" Value="1" KeyPath="yes" />\n')
         f.write('    </Component>\n\n')
 
@@ -172,13 +192,13 @@ def generate_wxs(deploy_dir: Path, output: Path, product_name: str, upgrade_code
         f.write('    <Component Id="AutostartRegistry" Guid="*" Directory="INSTALLFOLDER">\n')
         f.write('      <RegistryValue Root="HKCU"\n')
         f.write('                     Key="Software\\Microsoft\\Windows\\CurrentVersion\\Run"\n')
-        f.write('                     Name="Nimbus"\n')
-        f.write('                     Value="[INSTALLFOLDER]Nimbus.exe -hidden"\n')
+        f.write('                     Name="Nimbus Weather"\n')
+        f.write('                     Value="&quot;[INSTALLFOLDER]NimbusWeather.exe&quot; -hidden"\n')
         f.write('                     Type="string" KeyPath="yes" />\n')
         f.write('    </Component>\n\n')
 
         # Feature
-        f.write('    <Feature Id="Main" Title="Nimbus" Level="1">\n')
+        f.write('    <Feature Id="Main" Title="Nimbus Weather" Level="1">\n')
         f.write('      <ComponentGroupRef Id="AppComponents" />\n')
         f.write('      <ComponentGroupRef Id="ShortcutComponents" />\n')
         f.write('      <ComponentGroupRef Id="DesktopShortcutComponents" />\n')
@@ -195,7 +215,9 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('deploy_dir', type=Path)
     parser.add_argument('output', type=Path)
-    parser.add_argument('--name', default='Nimbus')
+    parser.add_argument('--name', default=APP_DISPLAY_NAME)
+    parser.add_argument('--version', default=APP_VERSION)
     parser.add_argument('--upgrade-code', required=True)
     args = parser.parse_args()
-    generate_wxs(args.deploy_dir, args.output, args.name, args.upgrade_code)
+    generate_wxs(args.deploy_dir, args.output, args.name,
+                 args.version, args.upgrade_code)
