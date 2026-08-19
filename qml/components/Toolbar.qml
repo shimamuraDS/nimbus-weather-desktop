@@ -68,7 +68,7 @@ Rectangle {
 
             Text {
                 text: qsTr("Nimbus Weather")
-                font: theme.titleFont
+                font: theme.subtitleFont
                 color: theme.primaryText
                 Layout.alignment: Qt.AlignVCenter
             }
