@@ -6,6 +6,7 @@
 #include <QFile>
 #include <QDebug>
 #include <QTime>
+#include <QStandardPaths>
 #include <algorithm>
 
 namespace Util {
@@ -63,7 +64,11 @@ Config::Config() {
         m_userSettings->sync();
     }
 
-    setAutoStart(isAutoStart());
+    // Unit tests use isolated application metadata and must never rewrite the
+    // real user's Windows startup entry.
+    if (!QStandardPaths::isTestModeEnabled()) {
+        setAutoStart(isAutoStart());
+    }
 }
 
 // DPAPI via runtime dynamic loading — no linker dependency on crypt32

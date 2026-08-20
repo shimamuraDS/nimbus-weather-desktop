@@ -41,8 +41,8 @@ int main(int argc, char *argv[])
     // 初始化服务层
     auto* weatherService = new Service::WeatherService(&app);
     auto* locationService = new Service::LocationService(&app);
-    auto* alertService = new Service::AlertService(&app);
     auto& notificationMgr = Service::NotificationManager::getInstance();
+    auto* alertService = new Service::AlertService(notificationMgr, &app);
 
     // 初始化 ViewModel 层
     auto* weatherViewModel = new ViewModel::WeatherViewModel(weatherService, locationService, &app);

@@ -7,9 +7,11 @@
 #include <QAction>
 #include <memory>
 
+#include "AlertNotifier.h"
+
 namespace Service {
 
-class NotificationManager : public QObject {
+class NotificationManager : public QObject, public AlertNotifier {
     Q_OBJECT
 public:
     static NotificationManager& getInstance();
@@ -18,7 +20,7 @@ public:
     NotificationManager& operator=(const NotificationManager&) = delete;
 
     QSystemTrayIcon* getTrayIcon() const;
-    void showWeatherAlert(const QString& title, const QString& content);
+    bool showWeatherAlert(const QString& title, const QString& content) override;
 
 signals:
     void quitRequested();

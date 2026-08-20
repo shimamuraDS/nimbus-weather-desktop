@@ -32,10 +32,29 @@ add_executable(tst_LLMClient tst_LLMClient.cpp
 target_link_libraries(tst_LLMClient PRIVATE Qt6::Core Qt6::Test Qt6::Network)
 target_include_directories(tst_LLMClient PRIVATE ${CMAKE_SOURCE_DIR}/src)
 
+set(ALERT_SERVICE_TEST_SOURCES
+    tst_AlertService.cpp
+    ${CMAKE_SOURCE_DIR}/src/service/AlertService.cpp
+    ${CMAKE_SOURCE_DIR}/src/data/WeatherCacheManager.cpp
+    ${CMAKE_SOURCE_DIR}/src/util/Config.cpp
+    ${CMAKE_SOURCE_DIR}/src/util/TimeUtil.cpp
+    ${CMAKE_SOURCE_DIR}/src/util/WeatherCode.cpp
+)
+if(WITH_LLM)
+    list(APPEND ALERT_SERVICE_TEST_SOURCES
+        ${CMAKE_SOURCE_DIR}/src/llm/LLMAlertGenerator.cpp
+        ${CMAKE_SOURCE_DIR}/src/llm/LLMClient.cpp
+    )
+endif()
+add_executable(tst_AlertService ${ALERT_SERVICE_TEST_SOURCES})
+target_link_libraries(tst_AlertService PRIVATE Qt6::Core Qt6::Test Qt6::Network)
+target_include_directories(tst_AlertService PRIVATE ${CMAKE_SOURCE_DIR}/src)
+
 add_test(NAME HourlyMerge COMMAND tst_HourlyMerge)
 add_test(NAME AlertCondition COMMAND tst_AlertCondition)
 add_test(NAME HttpService COMMAND tst_HttpService)
 add_test(NAME LLMClient COMMAND tst_LLMClient)
+add_test(NAME AlertService COMMAND tst_AlertService)
 
 # Windows does not search the compiler directory when CTest launches an
 # executable. Keep every test self-contained so it cannot accidentally load a
@@ -68,4 +87,5 @@ if(WIN32)
     deploy_test_runtime(tst_AlertCondition)
     deploy_test_runtime(tst_HttpService)
     deploy_test_runtime(tst_LLMClient)
+    deploy_test_runtime(tst_AlertService)
 endif()

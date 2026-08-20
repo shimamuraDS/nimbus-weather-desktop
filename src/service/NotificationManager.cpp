@@ -1,6 +1,7 @@
 #include "NotificationManager.h"
 #include <QIcon>
 #include <QApplication>
+#include <QDebug>
 
 namespace Service {
 
@@ -37,10 +38,28 @@ QSystemTrayIcon* NotificationManager::getTrayIcon() const {
     return m_trayIcon;
 }
 
-void NotificationManager::showWeatherAlert(const QString& title, const QString& content) {
-    if (m_trayIcon && m_trayIcon->isVisible()) {
-        m_trayIcon->showMessage(title, content, QSystemTrayIcon::Warning, 10000);
+bool NotificationManager::showWeatherAlert(const QString& title, const QString& content) {
+    if (!m_trayIcon) {
+        qWarning() << "[NotificationManager] Notification dropped: tray icon is unavailable";
+        return false;
     }
+
+    if (!QSystemTrayIcon::isSystemTrayAvailable()) {
+        qWarning() << "[NotificationManager] Notification deferred: system tray is unavailable";
+        return false;
+    }
+
+    // Explorer may not have been ready when the application started. Re-show
+    // the icon before dispatching instead of silently dropping the alert.
+    if (!m_trayIcon->isVisible()) m_trayIcon->show();
+    if (!m_trayIcon->isVisible() || !QSystemTrayIcon::supportsMessages()) {
+        qWarning() << "[NotificationManager] Notification deferred: tray messages are unavailable";
+        return false;
+    }
+
+    m_trayIcon->showMessage(title, content, QSystemTrayIcon::Warning, 10000);
+    qInfo() << "[NotificationManager] Weather alert dispatched:" << title;
+    return true;
 }
 
 void NotificationManager::shutdown() {

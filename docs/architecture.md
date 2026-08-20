@@ -50,7 +50,8 @@ nimbus-weather-desktop/
 │   ├── service/
 │   │   ├── WeatherService.h/.cpp         # 天气数据获取与处理
 │   │   ├── LocationService.h/.cpp        # IP 自动 + 手动城市定位
-│   │   ├── AlertService.h/.cpp           # 双重模式异常天气检测与提醒
+│   │   ├── AlertNotifier.h               # 可注入、可测试的通知发送接口
+│   │   ├── AlertService.h/.cpp           # 持续异常监控 + 定时天气提醒
 │   │   └── NotificationManager.h/.cpp    # Windows 原生通知
 │   ├── viewmodel/
 │   │   ├── WeatherViewModel.h/.cpp       # 天气数据 QML 绑定
@@ -127,7 +128,8 @@ QML View Layer  →  ViewModel Layer  →  Service Layer  →  Network Layer
 
 - **单例模式** — `Config`, `WeatherCacheManager`, `NotificationManager` 使用单例，全局唯一
 - **信号槽驱动** — 网络请求异步完成 → 发射信号 → ViewModel 更新属性 → QML 自动刷新
-- **定时器调度** — `AlertService` 内部 60s 定时器轮询，匹配提醒时间点
+- **定时器调度** — `AlertService` 启动后立即检查，随后以 60s 定时器轮询；异常天气监控与用户定时提醒并行
+- **可测试通知边界** — `AlertService` 依赖 `AlertNotifier` 接口，只有通知通道接受消息后才提交去重状态，失败则保留重试机会
 - **编译时多版本** — `WITH_LLM` CMake 选项，同一代码库产出标准版/AI 版两个独立构建
 
 ---

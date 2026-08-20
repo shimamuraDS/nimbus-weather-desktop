@@ -5,23 +5,26 @@
 #include <QTimer>
 #include <QString>
 
+#include "AlertNotifier.h"
+
 namespace Service {
 
 class AlertService : public QObject {
     Q_OBJECT
 public:
-    explicit AlertService(QObject* parent = nullptr);
+    explicit AlertService(AlertNotifier& notifier, QObject* parent = nullptr);
     void startMonitoring();
 
 private slots:
     void checkAlerts();
 
 private:
-    void checkDefaultAlert();
+    bool checkSevereWeatherAlerts();
 
+    AlertNotifier& m_notifier;
     QTimer* m_timer;
     QString m_lastAlertDateTime;
-    QString m_lastDefaultAlertKey;
+    QString m_lastSevereAlertKey;
 };
 
 } // namespace Service

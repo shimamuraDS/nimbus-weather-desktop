@@ -6,6 +6,7 @@
 #include <QTcpServer>
 #include <QTcpSocket>
 #include <QTimer>
+#include <QStandardPaths>
 #include "network/HttpClient.h"
 #include "network/TencentApiClient.h"
 
@@ -80,6 +81,10 @@ class tst_HttpService : public QObject {
     Q_OBJECT
 
 private slots:
+    void initTestCase() {
+        QStandardPaths::setTestModeEnabled(true);
+    }
+
     void testLocationResponseParsing() {
         QJsonDocument doc = QJsonDocument::fromJson(MOCK_LOCATION_RESPONSE);
         QVERIFY(!doc.isNull());

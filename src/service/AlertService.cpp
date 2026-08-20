@@ -1,5 +1,4 @@
 #include "AlertService.h"
-#include "NotificationManager.h"
 #include "../util/Config.h"
 #include "../util/TimeUtil.h"
 #include "../util/WeatherCode.h"
@@ -10,19 +9,26 @@
 #include <QJsonArray>
 #include <QJsonObject>
 #include <QDateTime>
+#include <QDebug>
 
 namespace Service {
 
-AlertService::AlertService(QObject* parent) : QObject(parent) {
+AlertService::AlertService(AlertNotifier& notifier, QObject* parent)
+    : QObject(parent), m_notifier(notifier) {
     m_timer = new QTimer(this);
     connect(m_timer, &QTimer::timeout, this, &AlertService::checkAlerts);
 }
 
 void AlertService::startMonitoring() {
+    if (m_timer->isActive()) return;
+
+    // Run once as soon as the event loop starts. Waiting a full minute after
+    // launch can miss a short forecast window or an already-active warning.
+    QTimer::singleShot(0, this, &AlertService::checkAlerts);
     m_timer->start(60000);
 }
 
-void AlertService::checkDefaultAlert() {
+bool AlertService::checkSevereWeatherAlerts() {
     auto& cache = Data::WeatherCacheManager::getInstance();
 
     // Tier 1: official weather alarm always triggers
@@ -31,15 +37,19 @@ void AlertService::checkDefaultAlert() {
         QJsonObject alarm = alarms.first().toObject();
         QString alarmKey = alarm["title"].toString()
             + QLatin1Char('|') + alarm["pub_content"].toString();
-        if (alarmKey == m_lastDefaultAlertKey) return;
-        m_lastDefaultAlertKey = alarmKey;
-        NotificationManager::getInstance().showWeatherAlert(
-            alarm["title"].toString(), alarm["pub_content"].toString());
-        return;
+        if (alarmKey == m_lastSevereAlertKey) return false;
+        if (m_notifier.showWeatherAlert(alarm["title"].toString(),
+                                        alarm["pub_content"].toString())) {
+            m_lastSevereAlertKey = alarmKey;
+            return true;
+        } else {
+            qWarning() << "[AlertService] Official alarm delivery failed; will retry";
+        }
+        return false;
     }
 
     QJsonArray hourlyData = cache.getHourlyData();
-    if (hourlyData.isEmpty()) return;
+    if (hourlyData.isEmpty()) return false;
 
     // Find nearest non-sunny weather within the next 1 hour
     QString severeTime;
@@ -64,14 +74,12 @@ void AlertService::checkDefaultAlert() {
     }
 
     if (severeTime.isEmpty()) {
-        m_lastDefaultAlertKey.clear();
-        return;
+        m_lastSevereAlertKey.clear();
+        return false;
     }
 
     // Dedup: don't re-alert for the same weather event
-    if (severeEventKey == m_lastDefaultAlertKey) return;
-    m_lastDefaultAlertKey = severeEventKey;
-
+    if (severeEventKey == m_lastSevereAlertKey) return false;
     // Get current weather
     QString currentHourKey = QDateTime::currentDateTime().toString("yyyy-MM-dd HH:00");
     QString currentWeather;
@@ -89,18 +97,23 @@ void AlertService::checkDefaultAlert() {
         + QString::fromUtf8(" 左右将出现") + severeDesc
         + QString::fromUtf8("，请提前做好防范。");
 
-    NotificationManager::getInstance().showWeatherAlert(title, content);
+    if (m_notifier.showWeatherAlert(title, content)) {
+        m_lastSevereAlertKey = severeEventKey;
+        return true;
+    } else {
+        qWarning() << "[AlertService] Severe-weather alert delivery failed; will retry";
+    }
+    return false;
 }
 
 void AlertService::checkAlerts() {
     auto& config = Util::Config::getInstance();
     QStringList alertTimes = config.getAlertTimes();
 
-    // No alert times: default — alert 1h ahead of non-sunny weather
-    if (alertTimes.isEmpty()) {
-        checkDefaultAlert();
-        return;
-    }
+    // Severe-weather monitoring is always active. Scheduled forecast reminders
+    // are an additional feature and must never disable safety alerts.
+    const bool severeAlertDispatched = checkSevereWeatherAlerts();
+    if (alertTimes.isEmpty()) return;
 
     // Alert times configured: alert at specified times for ALL weather (including sunny)
     QString currentDateTime = QDateTime::currentDateTime().toString("yyyy-MM-dd HH:mm");
@@ -108,7 +121,9 @@ void AlertService::checkAlerts() {
     QString currentTime = currentDateTime.mid(11, 5);
     if (!alertTimes.contains(currentTime)) return;
 
-    m_lastAlertDateTime = currentDateTime;
+    // A newly dispatched safety alert already contains the actionable weather
+    // information. Do not show a second scheduled notification in the same tick.
+    if (severeAlertDispatched) return;
 
     // Get the duration window for this alert time
     QStringList durationMinutes = config.getAlertAdvanceMinutes();
@@ -116,17 +131,6 @@ void AlertService::checkAlerts() {
     int durationMin = (idx >= 0 && idx < durationMinutes.size()) ? durationMinutes[idx].toInt() : 0;
 
     auto& cache = Data::WeatherCacheManager::getInstance();
-
-    // Tier 1: official weather alarm
-    QJsonArray alarms = cache.getCurrentAlarms();
-    if (!alarms.isEmpty()) {
-        QJsonObject alarm = alarms.first().toObject();
-        QString title = alarm["title"].toString();
-        QString content = alarm["pub_content"].toString();
-
-        NotificationManager::getInstance().showWeatherAlert(title, content);
-        return;
-    }
 
     // Get current weather
     QJsonArray hourlyData = cache.getHourlyData();
@@ -199,14 +203,16 @@ void AlertService::checkAlerts() {
     if (Util::Config::getInstance().isLLMEnabled()) {
         auto* generator = new LLM::LLMAlertGenerator(this);
         generator->generateAlert(hourlyData, currentWeather, durationMin,
-            [this, buildFallback, generator](const QString& llmText) {
+            [this, buildFallback, generator, currentDateTime](const QString& llmText) {
+                bool delivered = false;
                 if (llmText.isEmpty()) {
                     auto fb = buildFallback();
-                    NotificationManager::getInstance().showWeatherAlert(fb.first, fb.second);
+                    delivered = m_notifier.showWeatherAlert(fb.first, fb.second);
                 } else {
-                    NotificationManager::getInstance().showWeatherAlert(
+                    delivered = m_notifier.showWeatherAlert(
                         QString::fromUtf8("Nimbus Weather"), llmText);
                 }
+                if (delivered) m_lastAlertDateTime = currentDateTime;
                 generator->deleteLater();
             });
         return;
@@ -214,7 +220,9 @@ void AlertService::checkAlerts() {
 #endif
 
     auto fb = buildFallback();
-    NotificationManager::getInstance().showWeatherAlert(fb.first, fb.second);
+    if (m_notifier.showWeatherAlert(fb.first, fb.second)) {
+        m_lastAlertDateTime = currentDateTime;
+    }
 }
 
 } // namespace Service
