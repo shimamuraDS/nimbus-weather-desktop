@@ -115,8 +115,8 @@ Nimbus Weather uses a single codebase with two conditional compilation branches,
 | **Notification Logic** | Fixed Chinese templates | DeepSeek natural language + offline auto fallback |
 | **External API Dependency** | Tencent LBS WebService API only | Tencent LBS API + DeepSeek (OpenAI-compatible) API |
 | **Secure Storage** | DPAPI encrypted Tencent dev key | DPAPI dual-key encryption (Tencent key + LLM key) |
-| **Package Artifact** | `NimbusWeather-1.0.2-win64-Standard.msi` | `NimbusWeather-1.0.2-win64-AI.msi` |
-| **Portable Archive** | `NimbusWeather-1.0.2-win64-Standard.zip` | `NimbusWeather-1.0.2-win64-AI.zip` |
+| **Package Artifact** | `NimbusWeather-1.0.3-win64-Standard.msi` | `NimbusWeather-1.0.3-win64-AI.msi` |
+| **Portable Archive** | `NimbusWeather-1.0.3-win64-Standard.zip` | `NimbusWeather-1.0.3-win64-AI.zip` |
 
 > [!NOTE]
 > When the LLM switch is disabled, the AI Edition has the same runtime overhead and underlying dependencies as the Standard Edition.
