@@ -115,8 +115,8 @@ Nimbus Weather 采用单一代码库、双编译条件分支方案，产出两�
 | **通知逻辑** | 固定中文模板 | DeepSeek 自然语言 + API 离线自动模板降级 |
 | **外部 API 依赖** | 仅腾讯位置服务 WebService API | 腾讯位置服务 API + DeepSeek (OpenAI 兼容) API |
 | **安全存储** | DPAPI 加密存储腾讯开发密钥 | DPAPI 双密钥加密（腾讯键 + LLM 键） |
-| **打包产物** | `NimbusWeather-1.0.3-win64-Standard.msi` | `NimbusWeather-1.0.3-win64-AI.msi` |
-| **免安装包** | `NimbusWeather-1.0.3-win64-Standard.zip` | `NimbusWeather-1.0.3-win64-AI.zip` |
+| **打包产物** | `NimbusWeather-1.0.4-win64-Standard.msi` | `NimbusWeather-1.0.4-win64-AI.msi` |
+| **免安装包** | `NimbusWeather-1.0.4-win64-Standard.zip` | `NimbusWeather-1.0.4-win64-AI.zip` |
 
 > [!NOTE]
 > AI 版本在未启用 LLM 开关时，运行时开销及底层依赖与标准版一致。

@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.30)
-project(NimbusWeather VERSION 1.0.3 LANGUAGES CXX)
+project(NimbusWeather VERSION 1.0.4 LANGUAGES CXX)
 
 include(GNUInstallDirs)
 

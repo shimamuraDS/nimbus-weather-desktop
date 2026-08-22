@@ -10,7 +10,7 @@ from pathlib import Path
 from xml.sax.saxutils import escape
 
 APP_DISPLAY_NAME = 'Nimbus Weather'
-APP_VERSION = '1.0.3'
+APP_VERSION = '1.0.4'
 EXECUTABLE_NAME = 'NimbusWeather.exe'
 ICON_FILENAME = 'NimbusWeather.ico'
 

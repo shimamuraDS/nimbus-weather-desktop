@@ -3,8 +3,8 @@
 ## 1. 安装与启动
 
 1.  从 [GitHub Releases](https://github.com/shimamuraDS/nimbus-weather-desktop/releases) 下载安装包：
-    - **标准版**：`NimbusWeather-1.0.3-win64-Standard.msi`（固定模板通知）
-    - **AI 版**：`NimbusWeather-1.0.3-win64-AI.msi`（LLM 智能通知 + 模板降级）
+    - **标准版**：`NimbusWeather-1.0.4-win64-Standard.msi`（固定模板通知）
+    - **AI 版**：`NimbusWeather-1.0.4-win64-AI.msi`（LLM 智能通知 + 模板降级）
 2.  双击运行 `.msi` 安装包，按向导完成安装。安装过程中可选择自定义安装路径。
 3.  安装完毕后，程序将默认开启**开机自启动**并隐藏运行。
 4.  您将在 Windows 屏幕右下角（系统托盘区域）看到一枚天气助手的图标。

@@ -115,8 +115,8 @@ Nimbus Weatherは単一コードベース、デュアルコンパイル条件分
 | **通知ロジック** | 固定中国語テンプレート | DeepSeek自然言語 + APIオフライン時自動テンプレートフォールバック |
 | **外部API依存** | Tencent LBS WebService APIのみ | Tencent LBS API + DeepSeek (OpenAI互換) API |
 | **セキュアストレージ** | DPAPI暗号化Tencent開発キー | DPAPIデュアルキー暗号化（Tencentキー + LLMキー） |
-| **パッケージ成果物** | `NimbusWeather-1.0.3-win64-Standard.msi` | `NimbusWeather-1.0.3-win64-AI.msi` |
-| **ポータブルアーカイブ** | `NimbusWeather-1.0.3-win64-Standard.zip` | `NimbusWeather-1.0.3-win64-AI.zip` |
+| **パッケージ成果物** | `NimbusWeather-1.0.4-win64-Standard.msi` | `NimbusWeather-1.0.4-win64-AI.msi` |
+| **ポータブルアーカイブ** | `NimbusWeather-1.0.4-win64-Standard.zip` | `NimbusWeather-1.0.4-win64-AI.zip` |
 
 > [!NOTE]
 > AI版はLLMスイッチが無効の場合、実行時オーバーヘッドと基盤依存関係は標準版と同じです。
