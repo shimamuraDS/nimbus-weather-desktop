@@ -49,6 +49,15 @@ int main(int argc, char *argv[])
     auto* settingsViewModel = new ViewModel::SettingsViewModel(locationService, &app);
     auto* trayViewModel = new ViewModel::TrayViewModel(&app);
 
+    // A tray application can remain hidden for hours. Refresh stale data when
+    // the user brings the window back instead of showing the previous session.
+    QObject::connect(trayViewModel, &ViewModel::TrayViewModel::windowVisibleChanged,
+                     weatherViewModel, [trayViewModel, weatherViewModel]() {
+        if (trayViewModel->windowVisible()) {
+            weatherViewModel->refreshIfStale();
+        }
+    });
+
     // Never leave the application inaccessible when Explorer's system tray is
     // unavailable during startup. Manual launches are visible by default;
     // auto-start remains hidden only when a working tray exists.

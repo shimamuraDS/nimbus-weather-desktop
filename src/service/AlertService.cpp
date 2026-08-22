@@ -10,6 +10,7 @@
 #include <QJsonObject>
 #include <QDateTime>
 #include <QDebug>
+#include <algorithm>
 
 namespace Service {
 
@@ -37,10 +38,10 @@ bool AlertService::checkSevereWeatherAlerts() {
         QJsonObject alarm = alarms.first().toObject();
         QString alarmKey = alarm["title"].toString()
             + QLatin1Char('|') + alarm["pub_content"].toString();
-        if (alarmKey == m_lastSevereAlertKey) return false;
+        if (alarmKey == m_lastOfficialAlarmKey) return false;
         if (m_notifier.showWeatherAlert(alarm["title"].toString(),
                                         alarm["pub_content"].toString())) {
-            m_lastSevereAlertKey = alarmKey;
+            m_lastOfficialAlarmKey = alarmKey;
             return true;
         } else {
             qWarning() << "[AlertService] Official alarm delivery failed; will retry";
@@ -51,35 +52,57 @@ bool AlertService::checkSevereWeatherAlerts() {
     QJsonArray hourlyData = cache.getHourlyData();
     if (hourlyData.isEmpty()) return false;
 
-    // Find nearest non-sunny weather within the next 1 hour
+    struct ForecastPoint {
+        QDateTime time;
+        QString description;
+    };
+
+    QList<ForecastPoint> forecast;
+    forecast.reserve(hourlyData.size());
+    for (const QJsonValue& value : hourlyData) {
+        const QJsonObject hourObject = value.toObject();
+        const QDateTime time =
+            Util::TimeUtil::parseTencentHour(hourObject["hour"].toString());
+        if (!time.isValid()) continue;
+
+        forecast.append({time,
+            hourObject["info"].toObject()["weather"].toString()});
+    }
+    std::sort(forecast.begin(), forecast.end(),
+              [](const ForecastPoint& lhs, const ForecastPoint& rhs) {
+        return lhs.time < rhs.time;
+    });
+
+    // Consecutive abnormal hourly records describe one weather event. Alert
+    // only for the first record (the onset), otherwise a long rain period
+    // would generate another notification for every forecast hour.
     QString severeTime;
     QString severeDesc;
     QString severeEventKey;
-    for (int i = 0; i < hourlyData.size(); ++i) {
-        QJsonObject hourObj = hourlyData[i].toObject();
-        QString hourStr = hourObj["hour"].toString();
-        QDateTime dt = Util::TimeUtil::parseTencentHour(hourStr);
-
-        if (Util::TimeUtil::isWithinFutureHours(dt, 1)) {
-            QJsonObject info = hourObj["info"].toObject();
-            QString weatherDesc = info["weather"].toString();
-
-            if (Util::WeatherCode::isSevereWeather(weatherDesc)) {
-                severeTime = hourStr.mid(11, 5);
-                severeDesc = weatherDesc;
-                severeEventKey = hourStr + QLatin1Char('|') + severeDesc;
-                break;
-            }
+    for (qsizetype i = 0; i < forecast.size(); ++i) {
+        const ForecastPoint& point = forecast[i];
+        if (!Util::TimeUtil::isWithinFutureHours(point.time, 1)
+            || !Util::WeatherCode::isSevereWeather(point.description)) {
+            continue;
         }
+
+        const bool continuesPreviousEvent = i > 0
+            && forecast[i - 1].time.secsTo(point.time) == 3600
+            && Util::WeatherCode::isSevereWeather(forecast[i - 1].description);
+        if (continuesPreviousEvent) continue;
+
+        severeTime = point.time.toString(QStringLiteral("HH:mm"));
+        severeDesc = point.description;
+        severeEventKey = point.time.toString(QStringLiteral("yyyy-MM-dd HH:mm"));
+        break;
     }
 
     if (severeTime.isEmpty()) {
-        m_lastSevereAlertKey.clear();
         return false;
     }
 
     // Dedup: don't re-alert for the same weather event
-    if (severeEventKey == m_lastSevereAlertKey) return false;
+    if (severeEventKey == m_lastForecastAlertKey) return false;
     // Get current weather
     QString currentHourKey = QDateTime::currentDateTime().toString("yyyy-MM-dd HH:00");
     QString currentWeather;
@@ -98,7 +121,7 @@ bool AlertService::checkSevereWeatherAlerts() {
         + QString::fromUtf8("，请提前做好防范。");
 
     if (m_notifier.showWeatherAlert(title, content)) {
-        m_lastSevereAlertKey = severeEventKey;
+        m_lastForecastAlertKey = severeEventKey;
         return true;
     } else {
         qWarning() << "[AlertService] Severe-weather alert delivery failed; will retry";

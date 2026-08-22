@@ -5,6 +5,7 @@
 #include <QJsonObject>
 #include <QJsonArray>
 #include <QList>
+#include <QDateTime>
 
 namespace Data {
 
@@ -35,6 +36,7 @@ public:
     QList<DailyWeather> getFutureForecast();
     QJsonArray getCurrentAlarms();
     QJsonArray getHourlyData() const;
+    QDateTime getLastFetchTime() const;
 
 private:
     WeatherCacheManager();

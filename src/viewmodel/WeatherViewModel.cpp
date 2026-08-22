@@ -2,9 +2,16 @@
 #include "../data/WeatherCacheManager.h"
 #include "../util/Config.h"
 #include <QDate>
+#include <QDateTime>
 #include <QDebug>
+#include <QTimer>
 
 namespace ViewModel {
+
+namespace {
+constexpr int kBackgroundRefreshIntervalMs = 15 * 60 * 1000;
+constexpr qint64 kVisibleRefreshMaxAgeSeconds = 5 * 60;
+}
 
 WeatherViewModel::WeatherViewModel(Service::WeatherService* weatherService,
                                    Service::LocationService* locationService,
@@ -36,6 +43,13 @@ WeatherViewModel::WeatherViewModel(Service::WeatherService* weatherService,
         }
     });
 
+    // Keep the tray-resident application supplied with fresh forecasts so
+    // alert checks do not depend on data fetched when the window was last open.
+    auto* refreshTimer = new QTimer(this);
+    refreshTimer->setInterval(kBackgroundRefreshIntervalMs);
+    connect(refreshTimer, &QTimer::timeout, this, &WeatherViewModel::requestData);
+    refreshTimer->start();
+
     loadFromCache();
 }
 
@@ -59,6 +73,18 @@ void WeatherViewModel::requestData() {
     emit isLoadingChanged();
 
     m_locationService->initLocation();
+}
+
+void WeatherViewModel::refreshIfStale() {
+    const QDateTime lastFetch =
+        Data::WeatherCacheManager::getInstance().getLastFetchTime();
+    const qint64 ageSeconds = lastFetch.isValid()
+        ? lastFetch.secsTo(QDateTime::currentDateTimeUtc())
+        : -1;
+
+    if (ageSeconds < 0 || ageSeconds >= kVisibleRefreshMaxAgeSeconds) {
+        requestData();
+    }
 }
 
 void WeatherViewModel::switchLocationMode() {

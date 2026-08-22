@@ -38,6 +38,7 @@ public:
     QVariantList hourlyList() const;
 
     Q_INVOKABLE void requestData();
+    Q_INVOKABLE void refreshIfStale();
     Q_INVOKABLE void switchLocationMode();
     Q_INVOKABLE void addAlertTime(const QString& time);
     Q_INVOKABLE void removeAlertTime(const QString& time);

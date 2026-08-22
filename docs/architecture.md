@@ -128,7 +128,8 @@ QML View Layer  →  ViewModel Layer  →  Service Layer  →  Network Layer
 
 - **单例模式** — `Config`, `WeatherCacheManager`, `NotificationManager` 使用单例，全局唯一
 - **信号槽驱动** — 网络请求异步完成 → 发射信号 → ViewModel 更新属性 → QML 自动刷新
-- **定时器调度** — `AlertService` 启动后立即检查，随后以 60s 定时器轮询；异常天气监控与用户定时提醒并行
+- **定时器调度** — `AlertService` 启动后立即检查，随后以 60s 定时器轮询；`WeatherViewModel` 每 15 分钟后台刷新，并在窗口唤出且缓存超过 5 分钟时刷新
+- **事件级天气去重** — 连续异常逐小时预报合并为一个天气事件，仅在事件开始前一小时通知；官方预警与预报事件分别维护去重状态
 - **可测试通知边界** — `AlertService` 依赖 `AlertNotifier` 接口，只有通知通道接受消息后才提交去重状态，失败则保留重试机会
 - **编译时多版本** — `WITH_LLM` CMake 选项，同一代码库产出标准版/AI 版两个独立构建
 
@@ -221,10 +222,10 @@ struct DailyWeather {
 | `GitHubReleaseClient` | Network | GitHub Releases API 调用，获取最新版本号与发布页 URL |
 | `WeatherService` | Service | 天气数据获取协调，触发缓存更新 |
 | `LocationService` | Service | 自动/手动定位逻辑，adcode 归一化 |
-| `AlertService` | Service | 60s 定时器，双重判定（官方预警 + 逐小时），触发通知 |
+| `AlertService` | Service | 60s 定时器，双重判定（官方预警 + 异常事件起点），触发通知 |
 | `NotificationManager` | Service | Windows 原生气泡通知 |
 | `WeatherCacheManager` | Data | JSON 缓存读写，过去 7 天聚合 |
-| `WeatherViewModel` | ViewModel | 天气数据 QML 绑定 |
+| `WeatherViewModel` | ViewModel | 天气数据 QML 绑定、15 分钟后台刷新及窗口唤出刷新 |
 | `SettingsViewModel` | ViewModel | 设置数据绑定 + LLM 配置绑定 + 更新检测 |
 | `TrayViewModel` | ViewModel | 系统托盘与窗口显隐 |
 | `Config` | Util | QSettings 持久化 + DPAPI 加密 |
@@ -298,6 +299,7 @@ DPAPI (crypt32.dll) 通过 `LoadLibrary`/`GetProcAddress` 动态加载，无需�
 | `tst_HourlyMerge` | `WeatherCacheManager` 逐小时数据去重合并、超期清理 |
 | `tst_AlertCondition` | `AlertService` 恶劣天气判定逻辑 (模拟数据断言) |
 | `tst_HttpService` | Mock 网络层，验证天气/定位 JSON 解析正确性 |
+| `tst_AlertService` | 异常事件起点、连续天气去重、通知失败重试、定时提醒与启动检查 |
 
 ### 集成测试场景
 

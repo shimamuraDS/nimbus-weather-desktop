@@ -6,6 +6,7 @@
 #include <QStandardPaths>
 #include <QDir>
 #include <QDate>
+#include <QDateTime>
 #include "data/WeatherCacheManager.h"
 
 class tst_HourlyMerge : public QObject {
@@ -51,6 +52,10 @@ private slots:
         hoursInfos.append(hour2);
 
         cache.appendHourlyData(hoursInfos);
+
+        const QDateTime lastFetch = cache.getLastFetchTime();
+        QVERIFY(lastFetch.isValid());
+        QVERIFY(qAbs(lastFetch.secsTo(QDateTime::currentDateTimeUtc())) <= 5);
 
         // 检查数据已写入
         QJsonArray result = cache.getHourlyData();
@@ -100,6 +105,7 @@ private slots:
         QVERIFY(cache.setActiveAdcode(440300));
         QCOMPARE(cache.getActiveAdcode(), 440300);
         QVERIFY(cache.getHourlyData().isEmpty());
+        QVERIFY(!cache.getLastFetchTime().isValid());
 
         QVERIFY(!cache.setActiveAdcode(440300));
     }

@@ -24,7 +24,8 @@ private:
     AlertNotifier& m_notifier;
     QTimer* m_timer;
     QString m_lastAlertDateTime;
-    QString m_lastSevereAlertKey;
+    QString m_lastOfficialAlarmKey;
+    QString m_lastForecastAlertKey;
 };
 
 } // namespace Service

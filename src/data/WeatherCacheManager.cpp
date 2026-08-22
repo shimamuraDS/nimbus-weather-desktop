@@ -64,6 +64,7 @@ void WeatherCacheManager::loadCache() {
     m_cacheData["hourly_data"] = QJsonArray();
     m_cacheData["future_forecast"] = QJsonArray();
     m_cacheData["current_alarms"] = QJsonArray();
+    m_cacheData.remove(QStringLiteral("last_fetch_time"));
 }
 
 void WeatherCacheManager::saveCache() {
@@ -91,6 +92,7 @@ bool WeatherCacheManager::setActiveAdcode(int adcode) {
     m_cacheData["hourly_data"] = QJsonArray();
     m_cacheData["future_forecast"] = QJsonArray();
     m_cacheData["current_alarms"] = QJsonArray();
+    m_cacheData.remove(QStringLiteral("last_fetch_time"));
     saveCache();
     return true;
 }
@@ -119,6 +121,7 @@ void WeatherCacheManager::cleanExpiredData() {
 
 void WeatherCacheManager::appendHourlyData(const QJsonArray& forecastHoursInfos) {
     QJsonArray hourlyData = m_cacheData["hourly_data"].toArray();
+    bool acceptedRecord = false;
 
     QHash<QString, int> existingHours;
     for (int i = 0; i < hourlyData.size(); ++i) {
@@ -137,6 +140,7 @@ void WeatherCacheManager::appendHourlyData(const QJsonArray& forecastHoursInfos)
         }
         QString standardizedHour = Util::TimeUtil::formatToHourlyString(dt);
         hourItem["hour"] = standardizedHour;
+        acceptedRecord = true;
 
         if (existingHours.contains(standardizedHour)) {
             hourlyData[existingHours[standardizedHour]] = hourItem;
@@ -160,6 +164,10 @@ void WeatherCacheManager::appendHourlyData(const QJsonArray& forecastHoursInfos)
     for (const QJsonObject& hour : sortedHours) hourlyData.append(hour);
 
     m_cacheData["hourly_data"] = hourlyData;
+    if (acceptedRecord) {
+        m_cacheData["last_fetch_time"] =
+            QDateTime::currentDateTimeUtc().toString(Qt::ISODateWithMs);
+    }
     cleanExpiredData();
 }
 
@@ -247,6 +255,15 @@ QJsonArray WeatherCacheManager::getCurrentAlarms() {
 
 QJsonArray WeatherCacheManager::getHourlyData() const {
     return m_cacheData["hourly_data"].toArray();
+}
+
+QDateTime WeatherCacheManager::getLastFetchTime() const {
+    const QString value = m_cacheData.value(QStringLiteral("last_fetch_time")).toString();
+    QDateTime timestamp = QDateTime::fromString(value, Qt::ISODateWithMs);
+    if (!timestamp.isValid()) {
+        timestamp = QDateTime::fromString(value, Qt::ISODate);
+    }
+    return timestamp;
 }
 
 } // namespace Data

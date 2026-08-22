@@ -1,6 +1,7 @@
 #include <QtTest>
 #include <QCoreApplication>
 #include <QDateTime>
+#include <QDir>
 #include <QJsonArray>
 #include <QJsonObject>
 #include <QSettings>
@@ -10,6 +11,7 @@
 #include "service/AlertNotifier.h"
 #include "service/AlertService.h"
 #include "util/Config.h"
+#include "util/TimeUtil.h"
 
 namespace {
 
@@ -32,22 +34,31 @@ void invokeAlertCheck(Service::AlertService& service) {
     QVERIFY(QMetaObject::invokeMethod(&service, "checkAlerts", Qt::DirectConnection));
 }
 
-void prepareSevereForecast() {
+void prepareForecast(const QStringList& descriptions) {
     static int testAdcode = 990100;
     auto& cache = Data::WeatherCacheManager::getInstance();
     QVERIFY(cache.setActiveAdcode(++testAdcode));
     cache.updateCurrentAlarms(QJsonArray());
 
-    QDateTime eventTime = QDateTime::currentDateTime().addSecs(3600);
-    eventTime.setTime(QTime(eventTime.time().hour(), 0));
+    QDateTime hour = QDateTime::currentDateTime();
+    hour.setTime(QTime(hour.time().hour(), 0));
 
-    QJsonObject info;
-    info["weather"] = QString::fromUtf8("小雨");
+    QJsonArray records;
+    for (qsizetype index = 0; index < descriptions.size(); ++index) {
+        QJsonObject info;
+        info["weather"] = descriptions[index];
 
-    QJsonObject hour;
-    hour["hour"] = eventTime.toString(QStringLiteral("yyyy-MM-dd HH:mm"));
-    hour["info"] = info;
-    cache.appendHourlyData(QJsonArray{hour});
+        QJsonObject record;
+        record["hour"] = hour.addSecs(index * 3600).toString(
+            QStringLiteral("yyyy-MM-dd HH:mm"));
+        record["info"] = info;
+        records.append(record);
+    }
+    cache.appendHourlyData(records);
+}
+
+void prepareSevereForecast() {
+    prepareForecast({QString::fromUtf8("晴"), QString::fromUtf8("小雨")});
 }
 
 } // namespace
@@ -60,6 +71,9 @@ private slots:
         QStandardPaths::setTestModeEnabled(true);
         QCoreApplication::setOrganizationName(QStringLiteral("NimbusWeatherTests"));
         QCoreApplication::setApplicationName(QStringLiteral("AlertServiceTests"));
+        QSettings::setDefaultFormat(QSettings::IniFormat);
+        QSettings::setPath(QSettings::IniFormat, QSettings::UserScope,
+                           QDir::tempPath() + QStringLiteral("/NimbusWeatherTests"));
         QSettings().clear();
     }
 
@@ -94,6 +108,41 @@ private slots:
 
         QCOMPARE(notifier.callCount, 1);
         QVERIFY(notifier.lastTitle.contains(QString::fromUtf8("未来1小时")));
+    }
+
+    void continuingSevereWeatherDoesNotAlertEveryHour() {
+        prepareForecast({QString::fromUtf8("小雨"),
+                         QString::fromUtf8("小雨"),
+                         QString::fromUtf8("小雨")});
+
+        FakeAlertNotifier notifier;
+        Service::AlertService service(notifier);
+        invokeAlertCheck(service);
+
+        QCOMPARE(notifier.callCount, 0);
+    }
+
+    void scheduledReminderRunsOnlyAtConfiguredMinute() {
+        auto& config = Util::Config::getInstance();
+        const QString scheduledTime = QTime::currentTime().toString("HH:mm");
+        config.setAlertTimes({scheduledTime});
+        config.setAlertAdvanceMinutes({QStringLiteral("60")});
+        prepareForecast({QString::fromUtf8("晴"), QString::fromUtf8("多云")});
+
+        QCOMPARE(config.getAlertTimes(), QStringList{scheduledTime});
+        const QJsonArray hourly =
+            Data::WeatherCacheManager::getInstance().getHourlyData();
+        QCOMPARE(hourly.size(), 2);
+        const QDateTime nextHour = Util::TimeUtil::parseTencentHour(
+            hourly[1].toObject()["hour"].toString());
+        QVERIFY(Util::TimeUtil::isWithinFutureHours(nextHour, 1));
+
+        FakeAlertNotifier notifier;
+        Service::AlertService service(notifier);
+        invokeAlertCheck(service);
+        invokeAlertCheck(service);
+
+        QCOMPARE(notifier.callCount, 1);
     }
 
     void scheduledReminderDoesNotDisableSevereMonitoring() {
